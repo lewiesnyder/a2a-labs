@@ -14,6 +14,7 @@ members = [
     "lab04-langgraph-node",
     "lab05-supervisor-router",
     "lab06-registry-discovery",
+    "lab07-sequential-chain",
 ]
 
 [[package]]
@@ -1975,6 +1976,17 @@ requires-dist = [
     { name = "a2a-labs-common", extras = ["langchain", "adk", "strands"], editable = "libs/a2a-labs-common" },
     { name = "lab00-protocol-fundamentals", editable = "labs/lab00-protocol-fundamentals" },
 ]
+
+[[package]]
+name = "lab07-sequential-chain"
+version = "0.1.0"
+source = { editable = "labs/lab07-sequential-chain" }
+dependencies = [
+    { name = "a2a-labs-common", extra = ["adk", "langchain", "strands"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "a2a-labs-common", extras = ["langchain", "adk", "strands"], editable = "libs/a2a-labs-common" }]
 
 [[package]]
 name = "langchain"

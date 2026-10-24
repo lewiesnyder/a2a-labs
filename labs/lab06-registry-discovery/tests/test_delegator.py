@@ -11,10 +11,9 @@ from a2a_labs_common.models.decision import FakeDecisionModel
 from fastapi import FastAPI
 from google.protobuf.json_format import MessageToDict
 from lab06_registry import keys
+from lab06_registry._testutil import Live, free_port
 from lab06_registry.agents.delegator import Delegator
 from langchain_core.messages import HumanMessage
-
-from .conftest import Live, free_port
 
 JAPANESE = "Translate 'good morning, how are you?' to Portuguese and Japanese"
 

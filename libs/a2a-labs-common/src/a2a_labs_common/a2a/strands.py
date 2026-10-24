@@ -35,7 +35,14 @@ AgentFactory = Callable[[str], StrandsLikeAgent]
 
 
 class StrandsA2AExecutor(AgentExecutor):
-    def __init__(self, agent_factory: AgentFactory, *, max_contexts: int = 32) -> None:
+    def __init__(
+        self,
+        agent_factory: AgentFactory,
+        *,
+        max_contexts: int = 32,
+        artifact_name: str = "response",
+    ) -> None:
+        self.artifact_name = artifact_name
         self._factory = agent_factory
         self._max = max_contexts
         # One agent per contextId keeps conversations separate (multi-tenant safe).
@@ -70,7 +77,7 @@ class StrandsA2AExecutor(AgentExecutor):
                 await updater.add_artifact(
                     [new_text_part(chunk)],
                     artifact_id=artifact_id,
-                    name="response",
+                    name=self.artifact_name,
                     append=streamed,
                     last_chunk=False,
                 )
@@ -81,7 +88,7 @@ class StrandsA2AExecutor(AgentExecutor):
             return
         if streamed:
             await updater.add_artifact(
-                [], artifact_id=artifact_id, name="response", append=True, last_chunk=True
+                [], artifact_id=artifact_id, name=self.artifact_name, append=True, last_chunk=True
             )
         await updater.complete()
 

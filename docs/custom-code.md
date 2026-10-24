@@ -30,3 +30,7 @@ Every `# CUSTOM:` construct in the repo is listed here: location, reason, offici
 | `a2a_labs_common/a2a/client.py` (`connect_with_card`) | Connect from a card you already verified, without re-fetching | `create_client(card)` (this wraps it with our interceptors) |
 | `lab06_registry/registry.py` | The A2A spec describes curated registries but defines no API; stores cards plus a verdict | none |
 | `lab06_registry/servers/agent_rogue.py` (`/_rogue/*`) | Lab-only control and counter endpoints | none |
+| `a2a_labs_common/a2a/relay.py` | A2A defines no relay protocol; a convention in message metadata, built from `TaskUpdater` and client calls | none |
+| `lab07_chain/executors/chain_orchestrator.py` | a2a-sdk has no workflow engine; client calls only | `SequentialAgent` / Strands Graph (implicit hand-off, no provenance) |
+| `lab07_chain/executors/wrappers.py` | Adapt ADK/Strands executors to DataPart in/out | none |
+| `lab07_chain/native.py` (Strands chain) | `A2AAgent` unusable on a2a-sdk 1.x (DEV-19) | `A2AAgent` nodes |

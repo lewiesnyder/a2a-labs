@@ -62,6 +62,7 @@ class LangGraphA2AExecutor(AgentExecutor):
         artifact_name: str = "answer",
         emit_node_updates: bool = False,
         snapshot_artifact: bool = False,
+        extra_artifacts: Callable[[dict[str, Any]], list[tuple[str, list[Any]]]] | None = None,
     ) -> None:
         if graph is None and graph_factory is None:
             raise ValueError("pass a compiled graph or an async graph_factory")
@@ -76,6 +77,9 @@ class LangGraphA2AExecutor(AgentExecutor):
         self.artifact_name = artifact_name  # name of the final artifact, e.g. "itinerary"
         self.emit_node_updates = emit_node_updates  # WORKING "▶ node: x" + langgraph_node metadata
         self.snapshot_artifact = snapshot_artifact  # a `state-snapshot` DataPart after each node
+        # Called with the final graph state; each (name, parts) becomes one more artifact, so a
+        # graph can return several results (Lab 07's editor: `final` text + `review` data).
+        self.extra_artifacts = extra_artifacts
         # Partial AI tokens as appended artifact chunks (spec: STREAM_TOKENS_AS_ARTIFACT=true).
         self.stream_tokens = (
             os.environ.get("STREAM_TOKENS_AS_ARTIFACT", "false").lower() == "true"
@@ -239,6 +243,10 @@ class LangGraphA2AExecutor(AgentExecutor):
             await u.add_artifact(
                 [new_text_part(final)], artifact_id=artifact_id, name=self.artifact_name
             )
+        if self.extra_artifacts is not None:
+            values = (await graph.aget_state(config)).values
+            for name, parts in self.extra_artifacts(values):
+                await u.add_artifact(parts, artifact_id=f"{self.agent_name}-{name}", name=name)
         await u.complete()
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:

@@ -3,6 +3,11 @@
 quick:
   - {match: "say ping", reply: "pong"}
 
+  # ── Lab 07: the editor (planner and writer scripts are under `reasoning:`) ────────────────
+  - {match: "Edit this draft for clarity", reply: "{after:Draft:\n}"}
+  - match: "Review this article"
+    reply: '{"issues": ["Paragraph 2 is long."], "summary": "Readable, one long paragraph."}'
+
   # ── Lab 06: the translators (the delegator's choice is scripted under `decision:`) ─────────
   - match: "good morning"
     framework: strands
@@ -51,6 +56,10 @@ quick:
 
 reasoning:
   - {match: "say ping", reply: "pong"}
+
+  # ── Lab 07: writer (the planner's non-JSON fake reply triggers the deterministic outline) ──
+  - {match: "Revise the draft", reply: "# Revised draft\n\nRevised using: {after:feedback:\n}"}
+  - {match: "Write the article", reply: "# Draft\n\nWritten from the outline:\n{after:Outline:\n}"}
 
   # ── Lab 05: synthesis passes the results through; ADK transfer routing per test prompt ─────
   # (these precede the Lab 02 entries because both match on substrings like "EUR")

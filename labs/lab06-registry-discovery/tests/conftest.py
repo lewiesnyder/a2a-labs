@@ -3,51 +3,21 @@
 from __future__ import annotations
 
 import asyncio
-import socket
-import threading
 from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Any
 
 import pytest
-import uvicorn
 from a2a_labs_common.a2a import client as client_mod
 from a2a_labs_common.models import settings as model_settings
 from a2a_labs_common.testing import clear_fake_calls
 from lab06_registry import keys
+from lab06_registry._testutil import Live, free_port
 
 AGENTS = {
     "lab06-agent-a": "agent_a",
     "lab06-agent-b": "agent_b",
     "lab06-agent-rogue": "agent_rogue",
 }
-
-
-def free_port() -> int:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        return int(s.getsockname()[1])
-
-
-class Live:
-    def __init__(self, app: Any, port: int) -> None:
-        self.port = port
-        self.url = f"http://127.0.0.1:{port}"
-        self.server = uvicorn.Server(
-            uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning")
-        )
-        self.thread = threading.Thread(target=self.server.run, daemon=True)
-
-    async def start(self) -> Live:
-        self.thread.start()
-        while not self.server.started:  # noqa: ASYNC110 - uvicorn exposes no awaitable for this
-            await asyncio.sleep(0.02)
-        return self
-
-    def stop(self) -> None:
-        self.server.force_exit = True
-        self.server.should_exit = True
-        self.thread.join(timeout=5)
 
 
 @pytest.fixture(autouse=True)
