@@ -86,5 +86,13 @@ def public_url(name: str) -> str:
     return str(_entry(name)[key])
 
 
+def public_host(name: str) -> str:
+    """Bare hostname to advertise (for adapters, like ADK ``to_a2a``, that build the URL)."""
+    from urllib.parse import urlparse
+
+    url = public_url(name)
+    return urlparse(url if "://" in url else f"//{url}").hostname or "localhost"
+
+
 def host_url(name: str) -> str:
     return str(_entry(name)["host_url"])

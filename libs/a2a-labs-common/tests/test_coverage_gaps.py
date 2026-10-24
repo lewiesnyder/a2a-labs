@@ -107,7 +107,7 @@ def _app():  # type: ignore[no-untyped-def]
         service="lab00-protocol-agent",
         name="Echo",
         description="Echoes text back",
-        skills=[cards.skill("e", "E", "d", [], [])],
+        skills=[cards.skill("e", "E", "d", ["t"], [])],
     )
     card.supported_interfaces[0].url = "http://testserver"
     return build_a2a_app(card=card, executor=StrandsA2AExecutor(lambda _c: Agent()))
@@ -171,7 +171,7 @@ async def test_llm_fallback_parses_json(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setenv("LLM_PROVIDER", "fake")
     replies = iter(['noise {"choice": "weather"} tail', '{"p": 0.7}', '{"level": 2}', "not json"])
     monkeypatch.setattr(
-        "a2a_labs_common.testing.scripted_reply", lambda role, prompt: next(replies)
+        "a2a_labs_common.testing.scripted_reply", lambda role, prompt, turns=1: next(replies)
     )
     m = LLMFallbackDecisionModel("quick")
     r = await m.decide(
@@ -198,7 +198,7 @@ async def test_llm_fallback_parses_json(monkeypatch: pytest.MonkeyPatch) -> None
 async def test_systemone_failure_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_PROVIDER", "fake")
     monkeypatch.setattr(
-        "a2a_labs_common.testing.scripted_reply", lambda role, prompt: '{"choice": "a"}'
+        "a2a_labs_common.testing.scripted_reply", lambda role, prompt, turns=1: '{"choice": "a"}'
     )
     respx.post("http://o/v1/systemone").mock(return_value=httpx.Response(404))
     m = _FallingBack(

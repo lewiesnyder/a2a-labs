@@ -16,10 +16,18 @@ import yaml
 from a2a_labs_common.config import find_config_dir
 from a2a_labs_common.models.decision import FakeDecisionModel
 
-__all__ = ["FakeDecisionModel", "asgi_client", "scripted_reply"]
+__all__ = ["FAKE_CALLS", "FakeDecisionModel", "asgi_client", "clear_fake_calls", "scripted_reply"]
+
+# Every prompt a fake chat model received, whole conversation included, so tests can assert
+# that turn 2 saw turn 1 (multi-turn memory) without a real LLM.
+FAKE_CALLS: list[dict[str, str]] = []
 
 
-def scripted_reply(role: str, prompt: str) -> str:
+def clear_fake_calls() -> None:
+    FAKE_CALLS.clear()
+
+
+def scripted_reply(role: str, prompt: str, turns: int = 1) -> str:
     path = find_config_dir() / "fake_responses.yaml"
     script: dict[str, list[dict[str, str]]] = (
         yaml.safe_load(path.read_text()) if path.is_file() else {}
@@ -27,7 +35,8 @@ def scripted_reply(role: str, prompt: str) -> str:
     for entry in script.get(role, []):
         if entry["match"] in prompt:
             return entry["reply"]
-    return f"[fake {role}] {prompt[:80]}"
+    # `turn=N` lets a test prove, over the wire, that the model saw N user turns (memory).
+    return f"[fake {role} turn={turns}] {prompt[:80]}"
 
 
 def asgi_client(app: Any, base_url: str = "http://testserver") -> httpx.AsyncClient:
@@ -54,7 +63,11 @@ def langchain_fake(role: str) -> Any:
             **kwargs: Any,
         ) -> ChatResult:
             prompt = str(messages[-1].content) if messages else ""
-            msg = AIMessage(content=scripted_reply(role, prompt))
+            FAKE_CALLS.append(
+                {"role": role, "conversation": " | ".join(str(m.content) for m in messages)}
+            )
+            turns = sum(1 for m in messages if getattr(m, "type", "") == "human")
+            msg = AIMessage(content=scripted_reply(role, prompt, turns))
             return ChatResult(generations=[ChatGeneration(message=msg)])
 
         def bind_tools(self, tools: Any, **kwargs: Any) -> Any:
@@ -79,9 +92,21 @@ def strands_fake(role: str) -> Any:
         ) -> AsyncIterable[Any]:
             last = messages[-1]["content"] if messages else []
             prompt = " ".join(b.get("text", "") for b in last if isinstance(b, dict))
+            FAKE_CALLS.append(
+                {
+                    "role": role,
+                    "conversation": " | ".join(
+                        b.get("text", "")
+                        for m in messages
+                        for b in m["content"]
+                        if isinstance(b, dict)
+                    ),
+                }
+            )
             yield {"messageStart": {"role": "assistant"}}
             yield {"contentBlockStart": {"start": {}}}
-            yield {"contentBlockDelta": {"delta": {"text": scripted_reply(role, prompt)}}}
+            turns = sum(1 for m in messages if m["role"] == "user")
+            yield {"contentBlockDelta": {"delta": {"text": scripted_reply(role, prompt, turns)}}}
             yield {"contentBlockStop": {}}
             yield {"messageStop": {"stopReason": "end_turn"}}
 
@@ -106,8 +131,17 @@ def adk_fake(role: str) -> Any:
         ) -> AsyncGenerator[LlmResponse, None]:
             parts = llm_request.contents[-1].parts if llm_request.contents else []
             prompt = " ".join(p.text or "" for p in parts)
+            FAKE_CALLS.append(
+                {
+                    "role": role,
+                    "conversation": " | ".join(
+                        p.text or "" for c in llm_request.contents for p in (c.parts or [])
+                    ),
+                }
+            )
+            turns = sum(1 for c in llm_request.contents if c.role == "user")
             reply = types.Content(
-                role="model", parts=[types.Part(text=scripted_reply(role, prompt))]
+                role="model", parts=[types.Part(text=scripted_reply(role, prompt, turns))]
             )
             yield LlmResponse(content=reply)
 

@@ -7,6 +7,8 @@ x-ollama-env: &ollama-env
 
 x-lab-env: &lab-env
   <<: *ollama-env
+  LLM_PROVIDER: ${LLM_PROVIDER:-}            # fake in CI (spec 08 §4)
+  DECISION_PROVIDER: ${DECISION_PROVIDER:-ollama_systemone}
   A2A_LABS_RUNTIME: docker
   A2A_LABS_CONFIG_DIR: /app/config
   OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4317

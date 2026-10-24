@@ -58,7 +58,7 @@ async def test_card_discovery_and_bridging() -> None:
         service="lab00-protocol-agent",
         name="n",
         description="d" * 25,
-        skills=[cards.skill("a", "A", "d", [], [])],
+        skills=[cards.skill("a", "A", "d", ["t"], [])],
     )
     bridge_card_urls(card)
     assert card.supported_interfaces[0].url == "http://localhost:10001"

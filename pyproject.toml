@@ -37,4 +37,5 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+addopts = "--import-mode=importlib"  # several labs share test module names
 markers = ["compose: needs running compose profile", "llm: needs a real model", "slow: long"]

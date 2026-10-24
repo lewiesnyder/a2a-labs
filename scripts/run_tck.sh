@@ -10,6 +10,7 @@ CACHE="$ROOT/.cache/a2a-tck"
 
 target="${1:?usage: run_tck.sh <service-name|url> [tck args]}"
 shift
+name="$(echo "$target" | sed -E 's#https?://##; s#[^A-Za-z0-9._-]+#_#g')"
 if [[ "$target" != http* ]]; then
   # Resolve a service name from config/endpoints.yaml (host URL; this script runs on the host).
   target="$(cd "$ROOT" && uv run python -c "import sys; from a2a_labs_common.config import host_url; print(host_url(sys.argv[1]))" "$target" 2>/dev/null)"
@@ -24,7 +25,10 @@ git -C "$CACHE" checkout --quiet "$TCK_COMMIT"
 cd "$CACHE"
 uv sync --quiet
 # [VERIFY resolved] current CLI is --sut-host and --level (not --category as in the older spec).
-uv run ./run_tck.py --sut-host "$target" "$@"
+rc=0
+uv run ./run_tck.py --sut-host "$target" "$@" || rc=$?   # keep going: reports are written either way
 
-mkdir -p "$ROOT/reports/tck"
-cp -r reports/. "$ROOT/reports/tck/" 2>/dev/null || true
+# Keep one report folder per system under test (docs/conformance.md is generated from these).
+mkdir -p "$ROOT/reports/tck/$name"
+cp -r reports/. "$ROOT/reports/tck/$name/" 2>/dev/null || true
+exit "$rc"

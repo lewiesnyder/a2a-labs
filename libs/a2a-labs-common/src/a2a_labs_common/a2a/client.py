@@ -284,4 +284,5 @@ def result_text(result: Task | Message) -> str:
     if isinstance(result, Message):
         return get_message_text(result)
     # delimiter="": streamed chunks arrive as appended parts and must concatenate seamlessly.
-    return "\n".join(get_artifact_text(a, delimiter="") for a in result.artifacts)
+    texts = (get_artifact_text(a, delimiter="") for a in result.artifacts)
+    return "\n".join(t for t in texts if t)  # data/raw-only artifacts (ADK tool calls) add no text

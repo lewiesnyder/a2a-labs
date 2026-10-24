@@ -78,7 +78,7 @@ def test_card_advertises_host_urls_when_running_on_the_host() -> None:
         service="lab00-protocol-agent",
         name="n",
         description="d" * 25,
-        skills=[cards.skill("a", "A", "d", [], [])],
+        skills=[cards.skill("a", "A", "d", ["t"], [])],
         bindings=("JSONRPC", "GRPC"),
     )
     assert [i.url for i in card.supported_interfaces] == [
@@ -92,8 +92,9 @@ def test_validate_card_reports_problems() -> None:
         service="lab00-protocol-agent",
         name="x",
         description="short",
-        skills=[cards.skill("a", "A", "d", [], []), cards.skill("a", "A2", "d", [], [])],
+        skills=[cards.skill("a", "A", "d", [], []), cards.skill("a", "A2", "d", ["t"], [])],
     )
     problems = cards.validate_card(card)
     assert "duplicate skill id a" in problems
+    assert any("no tags" in p for p in problems)
     assert any("description" in p for p in problems)

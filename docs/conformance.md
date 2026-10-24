@@ -33,3 +33,25 @@ Run: `make tck SUT=lab00-protocol-agent` (wraps `scripts/run_tck.sh`, TCK commit
 Why we did not patch the SDK: the labs teach what the SDK really does, and notebooks for
 Labs 01+ build on it. Patching its error tables here would hide behaviour learners will meet
 elsewhere. Re-run the TCK after each SDK upgrade and delete rows that are fixed.
+
+## Lab 01 framework servers (report only, not a gate), 2026-10-24
+
+`./scripts/run_tck.sh http://localhost:<port> --level must`, servers run on the host with
+`LLM_PROVIDER=fake`; they declare JSON-RPC only, so REST and gRPC tests are skipped.
+Summarise with `uv run scripts/tck_summary.py`.
+
+| Server | Framework | JSON-RPC MUST tests passed | MUST compatibility |
+|---|---|---|---|
+| `lab01-adk-agent` (:10102) | ADK `to_a2a` | 64 of 85 (6 failed) | 69.1% |
+| `lab01-strands-agent` (:10103) | `StrandsA2AExecutor` | 65 of 85 (5 failed) | 70.4% |
+| `lab01-langgraph-agent` (:10104) | `LangGraphA2AExecutor` | 65 of 85 (5 failed) | 70.4% |
+
+| TCK id | Servers | Why | Fixable? |
+|---|---|---|---|
+| DM-ART-001 | all three | Expects the artifact text `Generated text content`; an LLM agent answers with its own text | No: the test scripts the agent (Lab 00's `TckExecutor` handles it) |
+| DM-MSG-001 | all three | Expects a direct `Message`; these agents always create a Task | No: a design choice of the framework adapters (`sdk-echo` is the Message agent) |
+| DM-SERIAL-001 | ADK only | ADK puts snake_case keys in `metadata` (`adk_author`, `adk_session_id`, `adk_invocation_id`, ...) but A2A JSON uses camelCase | Upstream (google-adk); record and re-test after upgrades |
+
+Everything else that applies to JSON-RPC passes for all three, including task lifecycle, streaming,
+cancel and history. The framework adapters are conformant where the agent's behaviour does not
+matter; the three failures are about *what the agent says*, not about the protocol plumbing.

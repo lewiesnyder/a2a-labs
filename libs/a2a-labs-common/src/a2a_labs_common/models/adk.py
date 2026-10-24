@@ -5,7 +5,6 @@ ADK-2: every Agent MUST pass ``model=`` explicitly. ADK-3: Ollama uses ``ollama_
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from a2a_labs_common.models.settings import ModelRole, role_config
@@ -25,8 +24,9 @@ def get_adk_model(role: ModelRole = "quick", **overrides: Any) -> Any:
     from google.adk.models.lite_llm import LiteLlm
 
     if p == "ollama":
-        os.environ.setdefault("OLLAMA_API_BASE", c.base_url)  # LiteLLM reads this
-        return LiteLlm(model=f"ollama_chat/{c.model}", **overrides)
+        # Explicit api_base: .env may carry the container-side URL in OLLAMA_API_BASE, and the
+        # environment variable would win over setdefault on a host run (DEV-5).
+        return LiteLlm(model=f"ollama_chat/{c.model}", api_base=c.base_url, **overrides)
     prefix = {
         "openai": "openai",
         "openai_compatible": "openai",

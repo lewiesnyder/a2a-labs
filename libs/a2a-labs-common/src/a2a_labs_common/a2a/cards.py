@@ -118,6 +118,9 @@ def validate_card(card: AgentCard) -> list[str]:
         problems.append("no skills")
     ids = [s.id for s in card.skills]
     problems += [f"duplicate skill id {d}" for d in sorted({x for x in ids if ids.count(x) > 1})]
+    problems += [
+        f"skill {s.id} has no tags (required by the spec)" for s in card.skills if not s.tags
+    ]
     if len(card.description) < 20:
         problems.append("description shorter than 20 characters")
     return problems

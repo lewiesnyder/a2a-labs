@@ -68,7 +68,7 @@ def test_real_adapters_construct_without_network() -> None:
 async def test_fake_langchain_model(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_PROVIDER", "fake")
     assert (await get_langchain_model("quick").ainvoke("ping")).content == "pong"
-    assert "[fake quick]" in (await get_langchain_model("quick").ainvoke("other")).content
+    assert "[fake quick turn=1]" in (await get_langchain_model("quick").ainvoke("other")).content
 
 
 async def test_fake_strands_model(monkeypatch: pytest.MonkeyPatch) -> None:
