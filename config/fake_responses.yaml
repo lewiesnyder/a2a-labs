@@ -20,8 +20,29 @@ quick:
     tool_calls: [{name: lookup_fact, args: {city: Tokyo}}]
     reply: "{results}"
 
+  # ── Lab 03 specialists: each calls its MCP tools ───────────────────────────────────────────
+  - match: "feet in 3.2 km"
+    framework: strands
+    tool_calls:
+      - {name: convert_units, args: {value: 3.2, from_unit: km, to_unit: ft}}
+      - {name: calculate, args: {expression: "10498.69 * 0.12"}}
+    reply: "{results}"
+  - match: "9am in Chicago"
+    framework: adk
+    tool_calls:
+      - {name: lookup_timezone, args: {city: Chicago}}
+      - {name: lookup_timezone, args: {city: Tokyo}}
+    reply: "{results}"
+
 reasoning:
   - {match: "say ping", reply: "pong"}
+
+  # ── Lab 03 consumers: they only know the bridge's ask_* tools (same names in all frameworks) ─
+  - match: "feet in 3.2 km"
+    tool_calls:
+      - {name: ask_lab03_strands_specialist, args: {request: "How many feet in 3.2 km, and what is 12% of that?"}}
+      - {name: ask_lab03_adk_specialist, args: {request: "What time is it in Tokyo when it is 9am in Chicago?"}}
+    reply: "{results}"
 
   # ── Lab 02 controllers: one script per framework, because tool names differ ────────────────
   # LangChain controller: tools ask_currency / ask_weather / ask_facts

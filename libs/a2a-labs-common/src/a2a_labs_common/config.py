@@ -18,6 +18,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Host runs (notebooks, scripts) read .env from the repo; containers get it from compose env_file.
 # override=False keeps real environment variables authoritative.
 load_dotenv(find_dotenv(usecwd=True), override=False)
+# The labs never use GCP. Without this, google-auth probes the GCE metadata server on every ADK
+# MCP/tool call and each probe times out (about 10 s per call; DEV-25).
+os.environ.setdefault("NO_GCE_CHECK", "true")
 
 
 class LabSettings(BaseSettings):

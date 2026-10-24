@@ -253,3 +253,31 @@ def test_result_text_skips_data_parts_and_adk_thoughts() -> None:
         ],
     )
     assert result_text(task) == "final answer"
+
+
+def test_collect_rebuilds_a_task_when_a_continued_stream_has_no_task_event() -> None:
+    from a2a.helpers import new_text_artifact
+    from a2a.types import StreamResponse, TaskArtifactUpdateEvent, TaskStatus, TaskStatusUpdateEvent
+
+    evs = [
+        StreamResponse(
+            status_update=TaskStatusUpdateEvent(
+                task_id="t1", context_id="c1", status=TaskStatus(state=TaskState.TASK_STATE_WORKING)
+            )
+        ),
+        StreamResponse(
+            artifact_update=TaskArtifactUpdateEvent(
+                task_id="t1", context_id="c1", artifact=new_text_artifact("answer", "42")
+            )
+        ),
+        StreamResponse(
+            status_update=TaskStatusUpdateEvent(
+                task_id="t1",
+                context_id="c1",
+                status=TaskStatus(state=TaskState.TASK_STATE_COMPLETED),
+            )
+        ),
+    ]
+    r = collect(evs)
+    assert r.task_id == "t1" and r.context_id == "c1"
+    assert r.state == TaskState.TASK_STATE_COMPLETED and r.text == "42"

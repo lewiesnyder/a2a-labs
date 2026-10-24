@@ -19,6 +19,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from a2a.helpers import new_task_from_user_message, new_text_part
@@ -45,14 +46,20 @@ def message_text(msg: BaseMessage | Any) -> str:
 class LangGraphA2AExecutor(AgentExecutor):
     def __init__(
         self,
-        graph: Any,
+        graph: Any = None,
         *,
         agent_name: str,
+        graph_factory: Callable[[], Awaitable[Any]] | None = None,
         output_key: str = "messages",
         interrupt_to_input_required: bool = True,
         stream_tokens: bool | None = None,
     ) -> None:
-        self.graph = graph
+        if graph is None and graph_factory is None:
+            raise ValueError("pass a compiled graph or an async graph_factory")
+        self._graph = graph
+        # For graphs whose tools load asynchronously (MCP): built on first use, then cached.
+        self._graph_factory = graph_factory
+        self._graph_lock = asyncio.Lock()
         self.agent_name = agent_name
         self.output_key = output_key
         self.interrupt_to_input_required = interrupt_to_input_required
@@ -65,9 +72,21 @@ class LangGraphA2AExecutor(AgentExecutor):
         self._running: dict[str, asyncio.Task[Any]] = {}
 
     # ── helpers ────────────────────────────────────────────────────────────────────────────
+    async def _ensure_graph(self) -> Any:
+        if self._graph is None:
+            async with self._graph_lock:
+                if self._graph is None:
+                    assert self._graph_factory is not None
+                    self._graph = await self._graph_factory()
+        return self._graph
+
+    @property
+    def graph(self) -> Any:
+        return self._graph
+
     async def _is_resuming(self, config: dict[str, Any]) -> bool:
         """LangGraph is mid-interrupt when its state has pending ``next`` nodes with interrupts."""
-        state = await self.graph.aget_state(config)
+        state = await (await self._ensure_graph()).aget_state(config)
         return bool(state.next) and any(t.interrupts for t in state.tasks)
 
     @staticmethod
@@ -112,9 +131,8 @@ class LangGraphA2AExecutor(AgentExecutor):
         artifact_id = f"{self.agent_name}-answer"
         streamed = False
         # NEVER graph.stream() here: a sync iterator blocks the event loop and stalls SSE (LG-1).
-        async for mode, chunk in self.graph.astream(
-            inputs, config, stream_mode=["updates", "messages"]
-        ):
+        graph = await self._ensure_graph()
+        async for mode, chunk in graph.astream(inputs, config, stream_mode=["updates", "messages"]):
             if mode == "messages":
                 msg, _meta = chunk
                 token = message_text(msg) if isinstance(msg, AIMessageChunk) else ""
@@ -150,7 +168,7 @@ class LangGraphA2AExecutor(AgentExecutor):
                     else:
                         final = message_text(msg)
         if self.output_key != "messages":
-            state = await self.graph.aget_state(config)
+            state = await graph.aget_state(config)
             final = str(state.values.get(self.output_key, final))
         if streamed:
             await u.add_artifact(

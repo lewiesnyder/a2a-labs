@@ -1,0 +1,29 @@
+[project]
+name = "lab03-mcp-delegation"
+version = "0.1.0"
+description = "Lab 03 — Delegation via MCP (pattern 2b): MCP inside A2A, and A2A behind MCP."
+requires-python = ">=3.12,<3.13"
+dependencies = ["a2a-labs-common[langchain,adk,strands,mcp]"]
+
+[project.scripts]
+lab03-tools-mcp = "lab03_mcp.servers.tools_mcp:main"
+lab03-strands-specialist = "lab03_mcp.servers.strands_specialist:main"
+lab03-adk-specialist = "lab03_mcp.servers.adk_specialist:main"
+lab03-mcp-a2a-bridge = "lab03_mcp.servers.mcp_a2a_bridge:main"
+lab03-langgraph-mcp-consumer = "lab03_mcp.servers.langgraph_mcp_consumer:main"
+lab03-adk-mcp-consumer = "lab03_mcp.servers.adk_mcp_consumer:main"
+
+[tool.uv.sources]
+a2a-labs-common = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lab03_mcp"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "--import-mode=importlib"  # several labs share test module names
+markers = ["compose: needs running compose profile", "llm: needs a real model", "slow: long"]

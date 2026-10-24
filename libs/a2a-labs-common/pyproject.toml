@@ -37,9 +37,12 @@ langchain = [
   "langchain-aws",
   "openinference-instrumentation-langchain",
 ]
-adk = ["google-adk[a2a]>=2.12,<3", "litellm"]
+# litellm 1.106+ imports mcp 2.x-only symbols (CacheableResult) on every completion, while
+# langchain-mcp-adapters needs mcp 1.x; stay below 1.106 until the adapters support mcp 2 (DEV-24).
+adk = ["google-adk[a2a]>=2.12,<3", "litellm>=1.100,<1.106"]
 strands = ["strands-agents[ollama,otel,litellm]>=1.57.1", "strands-agents-tools"]
-mcp = ["mcp[cli]>=1.2", "langchain-mcp-adapters"]
+# mcp 2.x renamed FastMCP and broke langchain-mcp-adapters 0.3.x (DEV-24): stay on 1.x for now.
+mcp = ["mcp[cli]>=1.2,<2", "langchain-mcp-adapters"]
 all = ["a2a-labs-common[langchain,adk,strands,mcp]"]
 
 [build-system]

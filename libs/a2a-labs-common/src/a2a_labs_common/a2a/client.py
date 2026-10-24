@@ -205,7 +205,11 @@ async def send_text(c: Connected, text: str, **kw: Any) -> SendResult:
 
 
 def collect(evs: Sequence[StreamResponse]) -> SendResult:
-    """Fold an event stream into the final Task (or the single Message)."""
+    """Fold an event stream into the final Task (or the single Message).
+
+    A stream that CONTINUES an existing task has no leading ``Task`` event (only status and
+    artifact updates), so the Task is rebuilt from the first update's ids.
+    """
     task: Task | None = None
     message: Message | None = None
     for ev in evs:
@@ -215,10 +219,14 @@ def collect(evs: Sequence[StreamResponse]) -> SendResult:
         elif k == "task":
             task = Task()
             task.CopyFrom(ev.task)
-        elif k == "status_update" and task is not None:
-            task.status.CopyFrom(ev.status_update.status)
-        elif k == "artifact_update" and task is not None:
-            _merge_artifact(task, ev.artifact_update)
+        elif k == "status_update":
+            su = ev.status_update
+            task = task or Task(id=su.task_id, context_id=su.context_id)
+            task.status.CopyFrom(su.status)
+        elif k == "artifact_update":
+            au = ev.artifact_update
+            task = task or Task(id=au.task_id, context_id=au.context_id)
+            _merge_artifact(task, au)
     if task is None and message is None:
         raise ValueError("no task or message in response")
     return SendResult("task" if task else "message", message, task, list(evs))

@@ -10,6 +10,7 @@ members = [
     "lab00-protocol-fundamentals",
     "lab01-direct-client",
     "lab02-agent-as-tool",
+    "lab03-mcp-delegation",
 ]
 
 [[package]]
@@ -148,8 +149,8 @@ requires-dist = [
     { name = "langchain-ollama", marker = "extra == 'langchain'" },
     { name = "langchain-openai", marker = "extra == 'langchain'" },
     { name = "langgraph", marker = "extra == 'langchain'", specifier = ">=1.0" },
-    { name = "litellm", marker = "extra == 'adk'" },
-    { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'", specifier = ">=1.2" },
+    { name = "litellm", marker = "extra == 'adk'", specifier = ">=1.100,<1.106" },
+    { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'", specifier = ">=1.2,<2" },
     { name = "openinference-instrumentation-langchain", marker = "extra == 'langchain'" },
     { name = "opentelemetry-api", specifier = ">=1.27" },
     { name = "opentelemetry-exporter-otlp", specifier = ">=1.27" },
@@ -1286,6 +1287,15 @@ http2 = [
 ]
 
 [[package]]
+name = "httpx-sse"
+version = "0.4.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/4c/751061ffa58615a32c31b2d82e8482be8dd4a89154f003147acee90f2be9/httpx_sse-0.4.3.tar.gz", hash = "sha256:9b1ed0127459a66014aec3c56bebd93da3c1bc8bb6618c8082039a44889a755d", size = 15943, upload-time = "2025-10-10T21:48:22.271Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d2/fd/6668e5aec43ab844de6fc74927e155a3b37bf40d7c3790e49fc0406b6578/httpx_sse-0.4.3-py3-none-any.whl", hash = "sha256:0ac1c9fe3c0afad2e0ebb25a934a59f4c7823b60792691f779fad2c5568830fc", size = 8960, upload-time = "2025-10-10T21:48:21.158Z" },
+]
+
+[[package]]
 name = "httpx2"
 version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1831,6 +1841,17 @@ dependencies = [
 requires-dist = [{ name = "a2a-labs-common", extras = ["langchain", "adk", "strands"], editable = "libs/a2a-labs-common" }]
 
 [[package]]
+name = "lab03-mcp-delegation"
+version = "0.1.0"
+source = { editable = "labs/lab03-mcp-delegation" }
+dependencies = [
+    { name = "a2a-labs-common", extra = ["adk", "langchain", "mcp", "strands"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "a2a-labs-common", extras = ["langchain", "adk", "strands", "mcp"], editable = "libs/a2a-labs-common" }]
+
+[[package]]
 name = "langchain"
 version = "1.4.7"
 source = { registry = "https://pypi.org/simple" }
@@ -2081,11 +2102,12 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.106.2"
+version = "1.105.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "boto3" },
+    { name = "certifi" },
     { name = "click" },
     { name = "fastuuid" },
     { name = "filelock" },
@@ -2102,17 +2124,16 @@ dependencies = [
     { name = "pyyaml" },
     { name = "tiktoken" },
     { name = "tokenizers" },
-    { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/54/4b/0f42182e4a3f957e8b5d8bdc2522779092da973bef7a3492c8e6a3409764/litellm-1.106.2.tar.gz", hash = "sha256:9f0e770cb007c8c6e78917ad7b5c4f059f7bdc4a3606f854831780ea53fd9e2d", size = 21431422, upload-time = "2026-10-21T10:44:51.337Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/21/c6/aa9cef2cf560d4f72ebf8da9101ec46cf5bfef2a42cc6847ac21ac352dc8/litellm-1.105.4.tar.gz", hash = "sha256:fe1e8e1c5d359e59b7d438367129ab10e48304a1c63c8caa0c71a9f730028bba", size = 20197569, upload-time = "2026-10-24T08:44:58.883Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/47/1038af80d9831972fae8712a890c30252f51c514c092d83e0f1330bb1fa1/litellm-1.106.2-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:bf6f13445bb59d8d02131bbc1fb57161d1ae629bec65dc66f9add4c09fb6994a", size = 36283395, upload-time = "2026-10-21T10:44:22.902Z" },
-    { url = "https://files.pythonhosted.org/packages/51/fc/15e44b2a222dfda71e0aff107fccfb49b06a4695fae0eb6867aff84f7e1d/litellm-1.106.2-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:cc778d01ed65a8dd57d5211d581ec237e06df239a09c3d573ace33e0feea76c9", size = 35263059, upload-time = "2026-10-21T10:44:32.664Z" },
-    { url = "https://files.pythonhosted.org/packages/cf/a8/f21d7fd8f7ffa6ebacefbedfb6268430e2b55ce9b2f33a36ac0295ccd500/litellm-1.106.2-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:34bfdc26c2c075726eda59ec0675e2a8a67b6e59a03980def7ef7651b849141a", size = 35827639, upload-time = "2026-10-21T10:44:35.553Z" },
-    { url = "https://files.pythonhosted.org/packages/6b/30/4a38c22181ef7169b6c044b8294f2e5b06236aeeccfbe57c2f0e85a51bfe/litellm-1.106.2-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:cb1a2a1e55a4a8350ae2167525dc0d06f59b078cd685fb3e0f5419f02da5420e", size = 36789555, upload-time = "2026-10-21T10:44:38.879Z" },
-    { url = "https://files.pythonhosted.org/packages/a0/76/e7ca210ad574f5321c162f2b27f8674c260e0857323a9991c4d3765ce8f1/litellm-1.106.2-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:ce18971e2bb2aa58ef8efae1cd12da1248e1c2e5ae3cf5903bfb9d563bb34d9d", size = 35914468, upload-time = "2026-10-21T10:44:42.268Z" },
-    { url = "https://files.pythonhosted.org/packages/22/03/95518dfb58e29c45ab40a7bc3d1d76509d09011172c380145fc9e900a214/litellm-1.106.2-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:32e567ee53c812e36f79158ec280c8850973f84a9e5fdef50d31ca09306d148c", size = 36901860, upload-time = "2026-10-21T10:44:45.807Z" },
-    { url = "https://files.pythonhosted.org/packages/48/7a/a17de89184b5365980c3eb7d58176ae5a7e34538e56b942c833ff7f523b9/litellm-1.106.2-cp310-abi3-win_amd64.whl", hash = "sha256:836ab19110504ad7ba71d8ce73af6b9d1cf1dc6ffda2b49ebc1a51e348f754bc", size = 37619702, upload-time = "2026-10-21T10:44:48.564Z" },
+    { url = "https://files.pythonhosted.org/packages/93/77/4f84fa49ffa178d4b21b284c6e4f77205e01ea7da5c4356ae9f237a0ce4e/litellm-1.105.4-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:3d943d44a3b399b9b4fec814fb84b069a194bd50cd6431d6a76553d1ff022294", size = 38009576, upload-time = "2026-10-24T08:44:19.614Z" },
+    { url = "https://files.pythonhosted.org/packages/48/2b/77dda69d42eb4c79a5d609a9dec47860edb99bd0d53faf5513623795f9f8/litellm-1.105.4-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:29cfd6edf0df1d7a714fec57ff61579058ab5064109a8bc04422e82f69ab7a65", size = 36349473, upload-time = "2026-10-24T08:44:24.236Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/8b/b662a543c1b9b2d748524cd1a4a1c5e7669b315f84efec526b8b5b4c4ecf/litellm-1.105.4-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:9b209cdce5e8ced9178eea67b27690e880c2162c9b5667ab0f58c481fa6f3791", size = 37705590, upload-time = "2026-10-24T08:44:31.347Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/38/14fd78b090c2248d8c8bfe6c0b84d3bd861ec59e3f76da962f8772aad686/litellm-1.105.4-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:7b1ff6d32a8489c2439073f220871d42c736843933691b2e3b1c84ec0e3864cc", size = 38638154, upload-time = "2026-10-24T08:44:37.013Z" },
+    { url = "https://files.pythonhosted.org/packages/0c/34/604e16d97d31b4633d1cadf4cd402eb63511b813a42e37545b79debe093d/litellm-1.105.4-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:247d363dcb48d153a2b58e5e11a56eece97038b59ff686712760758b3f7b47af", size = 37779384, upload-time = "2026-10-24T08:44:42.767Z" },
+    { url = "https://files.pythonhosted.org/packages/a5/aa/94bf1836c6ad1d1b272c7d8c94a22537373d838024516e973051d46d7973/litellm-1.105.4-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:d84d045daee59dabde752c2c7c770c3f6ceaf210bf6b2274957ea05a0bd45aff", size = 38819885, upload-time = "2026-10-24T08:44:48.992Z" },
+    { url = "https://files.pythonhosted.org/packages/d9/cb/19aff6f2ce4e97d6a68564cc80f3dbb7d51afd32fbe564033481755c5d3a/litellm-1.105.4-cp310-abi3-win_amd64.whl", hash = "sha256:4c6e53bb678e48dbbe3bdad9a03c9136c189fcf28099ba8223b2ac5a1ba4279b", size = 39708843, upload-time = "2026-10-24T08:44:54.518Z" },
 ]
 
 [[package]]
@@ -2177,15 +2198,15 @@ wheels = [
 
 [[package]]
 name = "mcp"
-version = "2.1.1"
+version = "1.30.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
-    { name = "httpx2" },
+    { name = "httpx" },
+    { name = "httpx-sse" },
     { name = "jsonschema" },
-    { name = "mcp-types" },
-    { name = "opentelemetry-api" },
     { name = "pydantic" },
+    { name = "pydantic-settings" },
     { name = "pyjwt", extra = ["crypto"] },
     { name = "python-multipart" },
     { name = "pywin32", marker = "sys_platform == 'win32'" },
@@ -2195,28 +2216,15 @@ dependencies = [
     { name = "typing-inspection" },
     { name = "uvicorn", marker = "sys_platform != 'emscripten'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d4/6e/21fb8e5d579dbe21d96ea4d5034200d46d8bdf2261053b5bd041f3c2f612/mcp-2.1.1.tar.gz", hash = "sha256:50b7ba1ebbe117008ea7bdd288234043e69c20b403d6851d19661e6d431a75ef", size = 3984589, upload-time = "2026-08-25T16:14:02.376Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ba/93/0142dc84a666daf8ad51a34268f34c12fd6fda4f3810c4be2504eecc8212/mcp-1.30.0.tar.gz", hash = "sha256:445414625fce5c295faa505bb11bacece661ab6f4028d57c935db57820b7a3e4", size = 680511, upload-time = "2026-09-07T14:34:15.845Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/50/af/8644cc5fa26a59afd2df2e98eeb19e72926887fa4b7441aba4ff661140db/mcp-2.1.1-py3-none-any.whl", hash = "sha256:1c6c31c5d6471c58db76af3af8af67f46d11d01f0a59077d0a308cbdb3d3e915", size = 357912, upload-time = "2026-08-25T16:13:59.024Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/f4/e58bc33317c92a0203664daaf00bf6f41166cc0149e5d6870a03f7cd004a/mcp-1.30.0-py3-none-any.whl", hash = "sha256:666edb5009503e1047c9d60346a756f94b261f05cc2625f23d41c728ffc484d0", size = 234581, upload-time = "2026-09-07T14:34:14.266Z" },
 ]
 
 [package.optional-dependencies]
 cli = [
     { name = "python-dotenv" },
     { name = "typer" },
-]
-
-[[package]]
-name = "mcp-types"
-version = "2.1.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pydantic" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/6a/dd/1c4417dc0b722c23a1669032d5f044e41170fe5d4773b488a50fcce98c32/mcp_types-2.1.1.tar.gz", hash = "sha256:77dcbe48fba73cca71a673f2646a5f037a017b7a0a07ac89cec1113028890eda", size = 66674, upload-time = "2026-08-25T16:14:03.861Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/71/d0/242e63c510f4a17381f55b1549a3f94f5687a0595984febd2b6f87a687a0/mcp_types-2.1.1-py3-none-any.whl", hash = "sha256:26f9f7f03f2a5730717a5b98e2ab7eb640ac352d05a00cdc725c311864778295", size = 69656, upload-time = "2026-08-25T16:14:00.667Z" },
 ]
 
 [[package]]

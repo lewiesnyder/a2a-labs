@@ -208,3 +208,36 @@ async def test_cancel_stops_the_run_and_marks_canceled() -> None:
     canceled = await c.client.cancel_task(CancelTaskRequest(id=r.task_id))
     assert canceled.status.state == S.TASK_STATE_CANCELED
     await c.aclose()
+
+
+async def test_graph_factory_builds_the_graph_lazily_once() -> None:
+    built: list[int] = []
+
+    async def factory() -> Any:
+        built.append(1)  # e.g. an async MCP tool fetch
+        return echo_graph()
+
+    executor = LangGraphA2AExecutor(graph_factory=factory, agent_name="lazy")
+    assert executor.graph is None and built == []  # nothing built at construction
+    card = cards.build_card(
+        service="lab01-langgraph-agent",
+        name="LG",
+        description="LangGraph test agent",
+        skills=[cards.skill("s", "S", "d", ["t"], [])],
+    )
+    for i in card.supported_interfaces:
+        i.url = "http://testserver"
+    c = await connect(
+        "http://testserver",
+        httpx_client=asgi_client(build_a2a_app(card=card, executor=executor)),
+        streaming=False,
+    )
+    assert (await send_text(c, "a")).text == "echo: a"
+    assert (await send_text(c, "b")).text == "echo: b"
+    assert built == [1]  # built on first use, then cached
+    await c.aclose()
+
+
+def test_executor_needs_a_graph_or_a_factory() -> None:
+    with pytest.raises(ValueError, match="graph_factory"):
+        LangGraphA2AExecutor(agent_name="x")

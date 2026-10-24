@@ -19,9 +19,12 @@ from config/endpoints.yaml). With no matching entry, a generic echo reply is ret
 
 from __future__ import annotations
 
+import asyncio
 import itertools
 import json
+import os
 import re
+import time
 from collections.abc import AsyncGenerator, AsyncIterable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -38,8 +41,10 @@ __all__ = [
     "FakePlan",
     "asgi_client",
     "clear_fake_calls",
+    "fetch_trace",
     "plan_reply",
     "scripted_reply",
+    "span_index",
 ]
 
 # Every prompt a fake chat model received, whole conversation included, so tests can assert
@@ -271,3 +276,35 @@ def adk_fake(role: str) -> Any:
             yield LlmResponse(content=reply)
 
     return ScriptedLlm(model=f"fake-{role}")
+
+
+# ── Tempo (e2e trace tests) ─────────────────────────────────────────────────────────────────
+TEMPO = os.environ.get("TEMPO_URL", "http://localhost:3200")
+
+
+def span_index(trace_json: dict[str, Any]) -> list[tuple[str, str]]:
+    """(service.name, span name) for every span in a Tempo trace."""
+    out = []
+    for batch in trace_json.get("batches", []):
+        attrs = {a["key"]: a["value"].get("stringValue") for a in batch["resource"]["attributes"]}
+        for scope in batch.get("scopeSpans", []):
+            out += [(attrs.get("service.name", ""), s["name"]) for s in scope["spans"]]
+    return out
+
+
+async def fetch_trace(
+    trace_id: str,
+    want: set[str],
+    timeout: float = 40,  # noqa: ASYNC109 - plain deadline, not a cancel scope
+) -> list[tuple[str, str]]:
+    deadline = time.monotonic() + timeout
+    spans: list[tuple[str, str]] = []
+    async with httpx.AsyncClient(timeout=10) as http:
+        while time.monotonic() < deadline:
+            resp = await http.get(f"{TEMPO}/api/traces/{trace_id}")
+            if resp.status_code == 200:
+                spans = span_index(resp.json())
+                if want <= {s for _, s in spans}:
+                    return spans
+            await asyncio.sleep(2)
+    return spans

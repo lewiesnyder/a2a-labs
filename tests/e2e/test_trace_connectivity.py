@@ -7,43 +7,12 @@ from __future__ import annotations
 
 import asyncio
 import sys
-import time
 from pathlib import Path
-from typing import Any
 
-import httpx
 import pytest
+from a2a_labs_common.testing import fetch_trace
 
 pytestmark = pytest.mark.compose
-TEMPO = "http://localhost:3200"
-
-
-def span_index(trace_json: dict[str, Any]) -> list[tuple[str, str]]:
-    """(service.name, span name) for every span in a Tempo trace."""
-    out = []
-    for batch in trace_json.get("batches", []):
-        attrs = {a["key"]: a["value"].get("stringValue") for a in batch["resource"]["attributes"]}
-        for scope in batch.get("scopeSpans", []):
-            out += [(attrs.get("service.name", ""), s["name"]) for s in scope["spans"]]
-    return out
-
-
-async def fetch_trace(
-    trace_id: str,
-    want: set[str],
-    timeout: float = 40,  # noqa: ASYNC109 - plain deadline, not a cancel scope
-) -> list[tuple[str, str]]:
-    deadline = time.monotonic() + timeout
-    spans: list[tuple[str, str]] = []
-    async with httpx.AsyncClient(timeout=10) as http:
-        while time.monotonic() < deadline:
-            resp = await http.get(f"{TEMPO}/api/traces/{trace_id}")
-            if resp.status_code == 200:
-                spans = span_index(resp.json())
-                if want <= {s for _, s in spans}:
-                    return spans
-            await asyncio.sleep(2)
-    return spans
 
 
 async def test_notebook_cell_trace_spans_client_and_server() -> None:
