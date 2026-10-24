@@ -17,3 +17,15 @@ Resolved [VERIFY] items. Columns: item, spec location, finding, decision, date.
 | Host models | 04 §5 | `qwen3.8:27b` (completion, vision, tools, thinking), `llama3.2:latest` (completion, tools), `nimble-v3:latest` all present; `make models` passes | none | 2026-10-23 |
 | Compose file | 06 | `docker compose --profile all config -q` passes | none | 2026-10-23 |
 | Strands stream events | D11 | `Agent.stream_async(prompt)` yields dicts; text deltas are under the `"data"` key. Verified only via a duck-typed fake, **not yet against a real Strands Agent** | Re-verify with a real `OllamaModel` agent in M3 | 2026-10-23 |
+| Strands stream events | D11 | Resolved: with a real `strands.Agent` and a scripted `Model`, `stream_async` yields dicts; text deltas arrive as `{"data": <str>, "delta": {...}}`; also `event`, `message`, `result` keys | `StrandsA2AExecutor` keyed on `"data"` is correct. Still to re-check with a real Ollama model in M3 | 2026-10-23 |
+| `EventQueue` | 05 §3.2 | `EventQueue` is an ABC with only `enqueue_event`; instantiate-by-hand is deprecated | `EventQueueTap` subclasses it and forwards | 2026-10-23 |
+| `ClientCallInterceptor` | 05 §3.1 | `before(BeforeArgs)` / `after(AfterArgs)`; `after` is called once per streamed event, no end-of-stream hook; `BeforeArgs.context` can be set by the interceptor | Span opened in `before`, ended on terminal event or by the helper's `finally` | 2026-10-23 |
+| `create_rest_routes` mount | 01 §3, 03 §3 | Has `path_prefix=` argument, so REST can share the port under `/rest` | Used as spec'd; REST round trip tested | 2026-10-23 |
+| Card security field | 01 §5.1 | The proto field is `security_requirements` (not `security`) | Use `security_requirements` | 2026-10-23 |
+| a2a-sdk compat | 00 D1 | `create_jsonrpc_routes(enable_v0_3_compat=True)` serves `message/send` (lowercase enums); legacy `tasks/send` returns `-32601` | As spec'd; covered by a test | 2026-10-23 |
+| `StrandsTelemetry` | 05 §2.6 | Constructor accepts `tracer_provider` | Pass our global provider; never call `setup_otlp_exporter()` | 2026-10-23 |
+| `ChatOllama` thinking | 04 §3.1 | The field is `reasoning` | Used as spec'd | 2026-10-23 |
+| `OllamaModel` think | 04 §3.3 | `additional_args` exists in `OllamaConfig`; passing `{"think": bool}` is **not yet verified against a real run** | Re-verify in M3 | 2026-10-23 |
+| lgtm provisioning path | 05 §6, 06 §5 | `/otel-lgtm/grafana/conf/provisioning/dashboards/` exists and accepts our `a2a.yaml` mount | Path is correct | 2026-10-23 |
+| lgtm arrival | 05 §8 | A span, a log line and a counter from `init_telemetry` appear in Tempo (:3200), Loki (:3100) and Prometheus (:9090) within ~5 s; the counter becomes `a2a_server_tasks_started_total` | Setup notebook asserts all three | 2026-10-23 |
+| Bedrock adapter | 04 §3.1 | `ChatBedrockConverse` takes `model_id`, not `model` (found by mypy) | Fixed | 2026-10-23 |

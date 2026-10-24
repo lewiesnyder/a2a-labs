@@ -37,7 +37,7 @@ services:
   # ───────────────────────── Infrastructure (always on) ─────────────────────────
   lgtm:
     image: grafana/otel-lgtm:${LGTM_VERSION:-latest}
-    ports: ["3000:3000", "4317:4317", "4318:4318", "3200:3200", "3100:3100", "9090:9090"]   # UI, OTLP, Tempo, Loki, Prometheus APIs
+    ports: ["3000:3000", "${LGTM_OTLP_GRPC_PORT:-4317}:4317", "${LGTM_OTLP_HTTP_PORT:-4318}:4318", "3200:3200", "3100:3100", "9090:9090"]   # UI, OTLP, Tempo, Loki, Prometheus APIs
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin

@@ -15,19 +15,21 @@ a2a-labs-webhook-receiver = { workspace = true }
 
 [dependency-groups]
 dev = [
-  "pytest>=8", "pytest-asyncio>=0.24", "pytest-timeout", "respx", "nbmake", "papermill",
-  "ruff>=0.7", "mypy>=1.13", "pre-commit", "jupyterlab>=4.3", "ipykernel", "rich",
+  "pytest>=8", "pytest-asyncio>=0.24", "pytest-timeout", "pytest-cov", "respx", "nbmake", "papermill",
+  "ruff>=0.7", "mypy>=1.13", "types-PyYAML", "types-protobuf", "grpc-stubs", "pre-commit", "jupyterlab>=4.3", "ipykernel", "rich",
 ]
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = ["*.ipynb", "*.md"]  # specs hold illustrative code; never auto-format them
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "ASYNC", "RUF", "SIM"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
+exclude = ["/tests/"]  # strict on library code; tests are best effort (spec 02 §5)
 plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 module = ["strands.*", "google.adk.*", "litellm.*", "a2a.*"]

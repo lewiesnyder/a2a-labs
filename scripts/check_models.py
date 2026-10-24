@@ -2,6 +2,7 @@
 
 Implements: spec 04 §5. Exit code is non-zero when --require-all and any check fails.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -12,6 +13,8 @@ import sys
 import httpx
 
 BASE = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+if os.environ.get("A2A_LABS_RUNTIME") != "docker":  # host runs cannot resolve host.docker.internal
+    BASE = BASE.replace("host.docker.internal", "localhost")
 REQUIRED = {
     "reasoning": os.environ.get("REASONING_MODEL", "qwen3.8:27b"),
     "quick": os.environ.get("QUICK_MODEL", "llama3.2:latest"),

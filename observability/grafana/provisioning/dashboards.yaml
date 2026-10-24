@@ -1,0 +1,10 @@
+# Loads the A2A Labs dashboards (JSON files in observability/grafana/dashboards).
+apiVersion: 1
+providers:
+  - name: a2a-labs
+    folder: A2A Labs
+    type: file
+    disableDeletion: false
+    allowUiUpdates: true
+    options:
+      path: /otel-lgtm/a2a-dashboards

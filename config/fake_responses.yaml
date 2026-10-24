@@ -1,0 +1,5 @@
+# Scripts for LLM_PROVIDER=fake (spec 08 §4). First entry whose `match` is a substring of the prompt wins.
+quick:
+  - {match: "ping", reply: "pong"}
+reasoning:
+  - {match: "ping", reply: "pong"}

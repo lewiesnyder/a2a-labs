@@ -6,7 +6,6 @@ from a2a.helpers import new_text_message
 from a2a.server.agent_execution import RequestContext
 from a2a.server.context import ServerCallContext
 from a2a.types import a2a_pb2
-
 from a2a_labs_common.a2a.strands import StrandsA2AExecutor
 
 

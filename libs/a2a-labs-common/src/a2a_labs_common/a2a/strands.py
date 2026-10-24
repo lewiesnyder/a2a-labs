@@ -91,4 +91,3 @@ class StrandsA2AExecutor(AgentExecutor):
         if agent is not None and hasattr(agent, "cancel"):
             agent.cancel()
         await TaskUpdater(event_queue, context.task_id, context.context_id).cancel()
-
