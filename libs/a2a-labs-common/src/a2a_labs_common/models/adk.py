@@ -26,7 +26,11 @@ def get_adk_model(role: ModelRole = "quick", **overrides: Any) -> Any:
     if p == "ollama":
         # Explicit api_base: .env may carry the container-side URL in OLLAMA_API_BASE, and the
         # environment variable would win over setdefault on a host run (DEV-5).
-        return LiteLlm(model=f"ollama_chat/{c.model}", api_base=c.base_url, **overrides)
+        # `think` goes through LiteLLM; without it qwen3 reasoning is always on and ADK's A2A
+        # converter publishes the thoughts as extra artifact parts.
+        return LiteLlm(
+            model=f"ollama_chat/{c.model}", api_base=c.base_url, think=c.think, **overrides
+        )
     prefix = {
         "openai": "openai",
         "openai_compatible": "openai",

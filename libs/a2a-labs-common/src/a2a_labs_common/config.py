@@ -82,6 +82,9 @@ def public_url(name: str) -> str:
     In compose that is the docker DNS name; a server started on the host (``make run``,
     the TCK) advertises ``localhost`` URLs so clients on the host can follow the card (DEV-9).
     """
+    override = os.environ.get(f"{name.upper().replace('-', '_')}_URL")
+    if override:  # e.g. tests serving on an ephemeral port: advertise where we really are
+        return override
     key = "docker_url" if settings().runtime == "docker" else "host_url"
     return str(_entry(name)[key])
 

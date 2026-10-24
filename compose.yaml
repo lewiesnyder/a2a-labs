@@ -8,6 +8,7 @@ x-ollama-env: &ollama-env
 x-lab-env: &lab-env
   <<: *ollama-env
   LLM_PROVIDER: ${LLM_PROVIDER:-}            # fake in CI (spec 08 §4)
+  REASONING_THINK: ${REASONING_THINK:-true}  # `false` for snappy demos; shell value beats .env
   DECISION_PROVIDER: ${DECISION_PROVIDER:-ollama_systemone}
   A2A_LABS_RUNTIME: docker
   A2A_LABS_CONFIG_DIR: /app/config

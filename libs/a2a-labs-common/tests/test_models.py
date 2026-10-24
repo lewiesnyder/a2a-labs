@@ -67,7 +67,7 @@ def test_real_adapters_construct_without_network() -> None:
 
 async def test_fake_langchain_model(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_PROVIDER", "fake")
-    assert (await get_langchain_model("quick").ainvoke("ping")).content == "pong"
+    assert (await get_langchain_model("quick").ainvoke("say ping")).content == "pong"
     assert "[fake quick turn=1]" in (await get_langchain_model("quick").ainvoke("other")).content
 
 
@@ -76,7 +76,7 @@ async def test_fake_strands_model(monkeypatch: pytest.MonkeyPatch) -> None:
     from strands import Agent
 
     result = await Agent(model=get_strands_model("quick"), callback_handler=None).invoke_async(
-        "ping"
+        "say ping"
     )
     assert "pong" in str(result)
 
@@ -86,7 +86,7 @@ async def test_fake_adk_model(monkeypatch: pytest.MonkeyPatch) -> None:
     from google.adk.models.llm_request import LlmRequest
     from google.genai import types
 
-    req = LlmRequest(contents=[types.Content(role="user", parts=[types.Part(text="ping")])])
+    req = LlmRequest(contents=[types.Content(role="user", parts=[types.Part(text="say ping")])])
     out = [r async for r in get_adk_model("quick").generate_content_async(req)]
     assert out[0].content.parts[0].text == "pong"
 

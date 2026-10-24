@@ -1,0 +1,29 @@
+[project]
+name = "lab02-agent-as-tool"
+version = "0.1.0"
+description = "Lab 02 — Agent as tool (A2A pattern 2) with ADK, Strands and LangChain controllers."
+requires-python = ">=3.12,<3.13"
+dependencies = ["a2a-labs-common[langchain,adk,strands]"]
+
+[project.scripts]
+lab02-langgraph-currency = "lab02_tool.servers.langgraph_currency:main"
+lab02-strands-weather = "lab02_tool.servers.strands_weather:main"
+lab02-adk-facts = "lab02_tool.servers.adk_facts:main"
+lab02-adk-controller = "lab02_tool.servers.adk_controller:main"
+lab02-strands-controller = "lab02_tool.servers.strands_controller:main"
+lab02-langchain-controller = "lab02_tool.servers.langchain_controller:main"
+
+[tool.uv.sources]
+a2a-labs-common = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lab02_tool"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "--import-mode=importlib"  # several labs share test module names
+markers = ["compose: needs running compose profile", "llm: needs a real model", "slow: long"]

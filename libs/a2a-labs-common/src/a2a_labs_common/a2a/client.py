@@ -22,7 +22,7 @@ from a2a.client import (
     CredentialService,
     create_client,
 )
-from a2a.helpers import get_artifact_text, get_message_text, new_text_message
+from a2a.helpers import get_message_text, new_text_message
 from a2a.types import (
     AgentCard,
     Message,
@@ -283,6 +283,14 @@ async def wait_for_cards(
 def result_text(result: Task | Message) -> str:
     if isinstance(result, Message):
         return get_message_text(result)
-    # delimiter="": streamed chunks arrive as appended parts and must concatenate seamlessly.
-    texts = (get_artifact_text(a, delimiter="") for a in result.artifacts)
-    return "\n".join(t for t in texts if t)  # data/raw-only artifacts (ADK tool calls) add no text
+    # Streamed chunks arrive as appended parts and must concatenate seamlessly. Skip data/raw
+    # parts (ADK tool calls) and ADK "thought" parts, which are the model's private reasoning.
+    texts = (
+        "".join(p.text for p in a.parts if p.text and not _is_thought(p)) for a in result.artifacts
+    )
+    return "\n".join(t for t in texts if t)
+
+
+def _is_thought(part: Any) -> bool:
+    md = part.metadata  # a protobuf Struct: no .get()
+    return bool(part.HasField("metadata") and "adk_thought" in md and md["adk_thought"])

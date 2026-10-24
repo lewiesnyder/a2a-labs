@@ -34,7 +34,7 @@ from a2a_labs_common.models.decision import (
 )
 from a2a_labs_common.telemetry import a2a_client as tclient
 from a2a_labs_common.telemetry import setup as tsetup
-from a2a_labs_common.testing import asgi_client
+from a2a_labs_common.testing import FakePlan, asgi_client
 
 
 @pytest.fixture(autouse=True)
@@ -171,7 +171,8 @@ async def test_llm_fallback_parses_json(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setenv("LLM_PROVIDER", "fake")
     replies = iter(['noise {"choice": "weather"} tail', '{"p": 0.7}', '{"level": 2}', "not json"])
     monkeypatch.setattr(
-        "a2a_labs_common.testing.scripted_reply", lambda role, prompt, turns=1: next(replies)
+        "a2a_labs_common.testing.plan_reply",
+        lambda role, fw, last, results=(), turns=1: FakePlan(text=next(replies)),
     )
     m = LLMFallbackDecisionModel("quick")
     r = await m.decide(
@@ -198,7 +199,8 @@ async def test_llm_fallback_parses_json(monkeypatch: pytest.MonkeyPatch) -> None
 async def test_systemone_failure_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_PROVIDER", "fake")
     monkeypatch.setattr(
-        "a2a_labs_common.testing.scripted_reply", lambda role, prompt, turns=1: '{"choice": "a"}'
+        "a2a_labs_common.testing.plan_reply",
+        lambda role, fw, last, results=(), turns=1: FakePlan(text='{"choice": "a"}'),
     )
     respx.post("http://o/v1/systemone").mock(return_value=httpx.Response(404))
     m = _FallingBack(
@@ -234,3 +236,20 @@ def test_other_providers_construct(monkeypatch: pytest.MonkeyPatch) -> None:
         get_strands_model("quick", provider="anthropic").get_config()["model_id"]
         == "llama3.2:latest"
     )
+
+
+def test_result_text_skips_data_parts_and_adk_thoughts() -> None:
+    from a2a.helpers import new_data_part, new_text_part
+    from a2a.types import Artifact, Task
+    from google.protobuf.json_format import ParseDict
+
+    thought = new_text_part("private reasoning")
+    ParseDict({"adk_thought": True}, thought.metadata)
+    task = Task(
+        id="t",
+        artifacts=[
+            Artifact(artifact_id="a", parts=[thought, new_data_part({"k": 1})]),
+            Artifact(artifact_id="b", parts=[new_text_part("final "), new_text_part("answer")]),
+        ],
+    )
+    assert result_text(task) == "final answer"

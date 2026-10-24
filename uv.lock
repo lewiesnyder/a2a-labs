@@ -9,6 +9,7 @@ members = [
     "a2a-labs-webhook-receiver",
     "lab00-protocol-fundamentals",
     "lab01-direct-client",
+    "lab02-agent-as-tool",
 ]
 
 [[package]]
@@ -1811,6 +1812,17 @@ requires-dist = [
 name = "lab01-direct-client"
 version = "0.1.0"
 source = { editable = "labs/lab01-direct-client" }
+dependencies = [
+    { name = "a2a-labs-common", extra = ["adk", "langchain", "strands"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "a2a-labs-common", extras = ["langchain", "adk", "strands"], editable = "libs/a2a-labs-common" }]
+
+[[package]]
+name = "lab02-agent-as-tool"
+version = "0.1.0"
+source = { editable = "labs/lab02-agent-as-tool" }
 dependencies = [
     { name = "a2a-labs-common", extra = ["adk", "langchain", "strands"] },
 ]

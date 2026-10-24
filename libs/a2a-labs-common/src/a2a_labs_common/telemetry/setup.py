@@ -152,7 +152,12 @@ def _setup_logging(handles: TelemetryHandles, lp: Any, handler_cls: Any) -> None
     LoggingInstrumentor().instrument(set_logging_format=False, inject_trace_context=True)
     root = logging.getLogger()
     root.setLevel(level)
-    for noisy in ("httpx", "httpcore"):  # one INFO line per request drowns notebook output
+    for noisy in (
+        "httpx",
+        "httpcore",
+        "LiteLLM",
+        "litellm",
+    ):  # one INFO line per request drowns notebook output
         logging.getLogger(noisy).setLevel(logging.WARNING)
     console = logging.StreamHandler()
     console.setFormatter(logging.Formatter(CONSOLE_FORMAT))
