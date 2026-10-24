@@ -55,7 +55,7 @@ QUICK_DEMO = False
 # %% [markdown]
 # ## 2. Setup
 
-# %%
+# %% a2a_coverage=["op:Discovery"]
 # Telemetry, models, the four agents, and the embedded receiver
 import asyncio
 import base64
@@ -117,7 +117,7 @@ async def notes(**kw):
 # ## 4. An inline push config on `SendMessage`
 # The config (URL + a `token`) rides inside the request. The receiver is told which token and which JWKS to expect **before** the task exists, so the first notification cannot race the setup.
 
-# %% a2a_coverage=["pattern:7", "op:SendMessage", "op:CreatePushConfig", "state:SUBMITTED", "state:WORKING"]
+# %% a2a_coverage=["pattern:7", "op:SendMessage", "op:CreatePushConfig", "state:SUBMITTED", "state:WORKING", "artifact:chunked", "state:COMPLETED"]
 # Submit with return_immediately and watch notifications arrive while the task runs
 token = str(uuid.uuid4())
 await receiver.expect(token, receiver.jwks_url(REPORT))  # registered by TOKEN, before the task exists
@@ -233,7 +233,7 @@ print("fresh (iat within 5min):", abs(time.time() - claims["iat"]) < 300)
 # ## 7. Attacks
 # Five things an attacker (or a bug) can try. Each one is stopped by a different check.
 
-# %% a2a_coverage=["pattern:7", "state:REJECTED"]
+# %% a2a_coverage=["pattern:7", "state:REJECTED", "push:security"]
 # (a) SSRF target as a push URL; (b) forged JWT; (c) replay; (d) stale iat; (e) tampered body
 await receiver.expect(cap_token, receiver.jwks_url(PIPELINE))
 good = {k: v for k, v in headers.items() if k in ("authorization", "x-a2a-notification-token", "content-type")}
@@ -370,7 +370,7 @@ async with await connect(PIPELINE, streaming=True) as c:
 # ## 12. Durability
 # Let a task finish, restart the agent, and ask again. The SDK agent keeps tasks (and push configs) in SQLite on a volume.
 
-# %% a2a_coverage=["pattern:7", "op:GetTask"]
+# %% a2a_coverage=["pattern:7", "op:GetTask", "taskstore:db"]
 # GetTask before and after `docker compose restart` (needs the docker CLI)
 async with await connect(REPORT, streaming=False) as c:
     done = await send_text(c, "Build the Q3 report")

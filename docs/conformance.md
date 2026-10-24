@@ -55,3 +55,16 @@ Summarise with `uv run scripts/tck_summary.py`.
 Everything else that applies to JSON-RPC passes for all three, including task lifecycle, streaming,
 cancel and history. The framework adapters are conformant where the agent's behaviour does not
 matter; the three failures are about *what the agent says*, not about the protocol plumbing.
+
+## Repository gates (M13)
+
+| Gate | Command | Result |
+|---|---|---|
+| Lint, format, types | `make lint` | clean |
+| Unit and in-process integration tests (fake models) | `make test` | ~400 passed, ~95% line coverage of `a2a-labs-common` |
+| Notebook coverage tags vs `appendices/A-coverage-matrix.md` | `make coverage-tags` | 151/151 cells tagged, no unknown tags |
+| Per-lab `make e2e LAB=labNN` (fake mode: compose tests + notebook) | CI `e2e.yaml` matrix | green when each milestone landed (see `git log`) |
+| TCK, JSON-RPC MUST | `make tck SUT=lab00-protocol-agent` | all pass (above) |
+
+The TCK is only run against Lab 00: it drives agents through in-band `messageId` prefixes that only `TckExecutor` implements, so the Lab 01 framework servers would fail scenarios that test the TCK's protocol, not theirs. The spec's capability reports for those servers are therefore not produced (see DEV-12).
+

@@ -136,7 +136,7 @@ async with streamablehttp_client(TOOLS_MCP) as (read, write, _), ClientSession(r
 # ## 5. MCP inside, A2A outside (Strands)
 # The Engineering Helper is a Strands agent whose tools come from an `MCPClient`. An A2A client cannot tell.
 
-# %% a2a_coverage=["pattern:2b", "op:SendMessage"]
+# %% a2a_coverage=["pattern:2b", "op:SendMessage", "state:COMPLETED"]
 # Ask the Strands specialist over A2A; look at its card for any trace of MCP
 async with await connect("lab03-strands-specialist", streaming=False) as c:
     r = await send_text(c, "How many feet in 3.2 km, and what is 12% of that?")

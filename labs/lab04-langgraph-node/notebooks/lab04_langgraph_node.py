@@ -59,7 +59,7 @@ QUICK_DEMO = False
 # %% [markdown]
 # ## 2. Setup
 
-# %%
+# %% a2a_coverage=["op:Discovery"]
 # Initialise telemetry, show the models and wait for the services
 import asyncio
 import json
@@ -149,7 +149,7 @@ print(final.text)
 # ## 6. `INPUT_REQUIRED` from an interrupt
 # A request with missing details makes the graph call `interrupt()`.
 
-# %% a2a_coverage=["pattern:3", "state:INPUT_REQUIRED"]
+# %% a2a_coverage=["pattern:3", "state:INPUT_REQUIRED", "op:SendMessage", "part:data"]
 # Ask for a trip with no origin, dates, budget or travelers
 plain = await connect(PLANNER, streaming=False)
 first = await send_text(plain, "Plan a trip to Lisbon")

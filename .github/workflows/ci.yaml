@@ -1,0 +1,40 @@
+name: ci
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --all-packages --all-extras
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy libs
+      - name: Unit and in-process integration tests (fake models, no Docker)
+        env:
+          LLM_PROVIDER: fake
+          DECISION_PROVIDER: fake
+        run: uv run pytest -m "not compose and not llm and not slow" libs services labs
+      - name: Notebook coverage tags match appendices/A-coverage-matrix.md
+        run: uv run scripts/check_coverage_tags.py
+      - name: Notebooks are stored without outputs
+        run: uv run nbstripout --verify labs/*/notebooks/*.ipynb notebooks/*.ipynb
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          tags: a2a-labs:dev
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

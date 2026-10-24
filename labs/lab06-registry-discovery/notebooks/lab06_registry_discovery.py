@@ -112,7 +112,7 @@ print("protected header:", header)
 # ## 4. Sign and verify by hand
 # Canonicalise the card (RFC 8785, without `signatures`), look at the bytes that were signed, verify, then change one character.
 
-# %% a2a_coverage=["pattern:5"]
+# %% a2a_coverage=["pattern:5", "signing"]
 # Verify with the trust store, then tamper with one character and verify again
 from a2a.utils.signing import canonicalize
 
@@ -170,7 +170,7 @@ await api("POST", f"{ROGUE_URL}/_rogue/mode", json={"mode": "name_spoof"})  # th
 # ## 7. The delegator: search, re-verify, select, delegate
 # "Translate … to Portuguese and Japanese": only one translator knows Japanese. The delegator never contacts the rogue.
 
-# %% a2a_coverage=["pattern:5", "decision", "op:SendMessage"]
+# %% a2a_coverage=["pattern:5", "decision", "op:SendMessage", "state:COMPLETED"]
 # Ask the delegator over A2A, then read its state: candidates, verdicts and the Nimble choice
 before = (await api("GET", f"{ROGUE_URL}/_rogue/requests"))["rpc_calls"]
 ctx = str(uuid.uuid4())

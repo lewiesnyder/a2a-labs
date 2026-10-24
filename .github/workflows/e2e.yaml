@@ -1,0 +1,85 @@
+name: e2e
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        lab: [lab00, lab01, lab02, lab03, lab04, lab05, lab06, lab07, lab08, lab09, lab10]
+    env:
+      LLM_PROVIDER: fake
+      DECISION_PROVIDER: fake
+      SKIP_MODEL_CHECK: "true"
+      # Short timers keep the long-running labs fast in CI (the notebooks tolerate "too late").
+      PHASE_SECONDS: "0.3"
+      DOC_SECONDS: "0.2"
+      TOOL_SECONDS: "0.3"
+      NODE_SECONDS: "0.2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --all-packages --all-extras
+      - name: Start the lab (Lab 06 first generates its signing keys)
+        run: make up LAB=${{ matrix.lab }}
+      - run: uv run scripts/wait_for.py --lab ${{ matrix.lab }} --timeout 240
+      - name: Compose integration tests
+        run: uv run pytest -m compose labs/${{ matrix.lab }}-*/tests
+      - name: Notebook (fake models)
+        run: uv run pytest --nbmake labs/${{ matrix.lab }}-*/notebooks/*.ipynb
+      - name: Conformance (TCK, MUST level, JSON-RPC)
+        if: matrix.lab == 'lab00'
+        run: ./scripts/run_tck.sh lab00-protocol-agent
+      - name: Logs on failure
+        if: failure()
+        run: docker compose --profile ${{ matrix.lab }} logs --tail 200
+      - if: always()
+        run: docker compose --profile "*" down -v
+
+  trace-connectivity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LLM_PROVIDER: fake
+      DECISION_PROVIDER: fake
+      SKIP_MODEL_CHECK: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --frozen --all-packages --all-extras
+      - name: One cross-service trace per profile (lab00, lab03 MCP, lab04 nested)
+        run: |
+          for lab in lab00 lab03 lab04; do
+            make up LAB=$lab
+            uv run scripts/wait_for.py --lab $lab --timeout 240
+            uv run pytest tests/e2e -m compose -k "$( [ $lab = lab00 ] && echo connectivity || ([ $lab = lab03 ] && echo mcp || echo nested) )"
+            docker compose --profile "*" down -v
+          done
+      - if: always()
+        run: docker compose --profile "*" down -v
+
+  # Optional: real Ollama models on a self-hosted GPU runner (spec 08 §5).
+  notebooks-real-models:
+    if: ${{ vars.GPU_RUNNER == 'true' }}
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --frozen --all-packages --all-extras
+      - run: make models
+      - run: |
+          for lab in lab01 lab02 lab04 lab05 lab06 lab07 lab09 lab10; do
+            make e2e LAB=$lab
+            docker compose --profile "*" down -v
+          done
+        env:
+          LLM_PROVIDER: ""
+          DECISION_PROVIDER: ollama_systemone

@@ -142,7 +142,7 @@ for sk in card["skills"]:
 # ## 4. Transport auth: 401 before any task exists
 # Auth is the web framework's job, not the protocol's. We plug Starlette's `AuthenticationMiddleware` into the SDK server; the SDK then exposes the caller as `ServerCallContext.user`.
 
-# %% a2a_coverage=["security", "errors", "op:SendMessage"]
+# %% a2a_coverage=["security", "errors", "op:SendMessage", "state:COMPLETED"]
 # Anonymous, API key and OAuth against the same endpoint
 url = endpoint(SECURE)
 anon = rpc(url, "SendMessage", message_params(PUBLIC))

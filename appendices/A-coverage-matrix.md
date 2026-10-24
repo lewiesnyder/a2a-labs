@@ -32,9 +32,9 @@ Notebook cells that demonstrate a cell of this matrix carry `metadata.a2a_covera
 | INPUT_REQUIRED | `state:INPUT_REQUIRED` | L00, L02, L04, L05, L07 |
 | AUTH_REQUIRED | `state:AUTH_REQUIRED` | L00, L10 |
 | COMPLETED | `state:COMPLETED` | all |
-| FAILED | `state:FAILED` | L00, L05 (degraded), L07 |
+| FAILED | `state:FAILED` | L00, L05 (degraded), L06 (rogue card) |
 | CANCELED | `state:CANCELED` | L00, L04, L07, L08 |
-| REJECTED | `state:REJECTED` | L00, L09 (deviation path), L10 |
+| REJECTED | `state:REJECTED` | L00, L08 (push URL refused), L10 (Lab 09 returns AGP errors as JSON-RPC errors instead, DEV-63) |
 
 ## A.3 Patterns × frameworks
 

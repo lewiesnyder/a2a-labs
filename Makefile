@@ -7,7 +7,7 @@ export SKIP_MODEL_CHECK := true
 endif
 PROFILES := $(if $(filter container,$(OLLAMA_MODE)),--profile ollama,)
 
-.PHONY: setup models up down logs notebook test e2e tck lint
+.PHONY: setup models up down logs notebook test e2e tck lint coverage-tags
 
 setup:
 	uv sync --all-packages --all-extras
@@ -44,3 +44,6 @@ tck:
 
 lint:
 	uv run ruff check . && uv run ruff format --check . && uv run mypy libs
+
+coverage-tags:
+	uv run scripts/check_coverage_tags.py

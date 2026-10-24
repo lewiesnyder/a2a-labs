@@ -73,7 +73,7 @@ QUICK_DEMO = False
 # %% [markdown]
 # ## 2. Setup
 
-# %%
+# %% a2a_coverage=["op:Discovery"]
 # Initialise telemetry, show the models and wait for the four services
 import asyncio
 import json
@@ -116,7 +116,7 @@ HARD = "Explain quantum entanglement to a 10-year-old in 3 paragraphs, using onl
 # ## 4. Hop by hop, by hand
 # Before any automation: call the three agents yourself.
 
-# %% a2a_coverage=["pattern:6", "op:SendMessage"]
+# %% a2a_coverage=["pattern:6", "op:SendMessage", "part:data"]
 # Planner: the topic goes in as text; the outline comes back as a DataPart plus its text rendering
 planner = await connect(PLANNER, streaming=False)
 plan = await send_text(planner, TOPIC)
@@ -124,7 +124,7 @@ outline = artifact_data(plan, "outline")
 print(state_name(plan.state), "| task", plan.task_id[:8], "| artifact parts:", [("data" if p.HasField("data") else "text") for p in plan.task.artifacts[0].parts])
 print(json.dumps(outline, indent=1)[:420])
 
-# %% a2a_coverage=["pattern:6", "op:SendStreamingMessage", "op:GetTask"]
+# %% a2a_coverage=["pattern:6", "op:SendStreamingMessage", "op:GetTask", "artifact:chunked", "refs"]
 # Writer: the outline as a DataPart, linked to the planner's task; the draft streams back in chunks
 writer = await connect(WRITER, streaming=True)
 chunks, draft_events = 0, []
@@ -183,7 +183,7 @@ for h in prov["hops"][1:]:
 # ## 6. The quality loop
 # The decision model scores the editor's review (`unusable / major / minor / publishable`). Below `minor`, the draft goes back to the writer **in the writer's own context**, as a new task that references the previous two.
 
-# %% a2a_coverage=["pattern:6", "decision"]
+# %% a2a_coverage=["pattern:6", "decision", "op:ListTasks"]
 # A request that is hard to satisfy; watch the scores and the revision loops
 async with await connect(ORCH, streaming=False) as oc:
     hard = await send_text(oc, HARD, context_id=str(uuid.uuid4()))

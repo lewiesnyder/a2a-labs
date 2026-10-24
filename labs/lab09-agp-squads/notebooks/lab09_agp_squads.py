@@ -160,7 +160,7 @@ show_table(FIN)
 # ## 6. Send an Intent
 # One request at the root. The gateway checks the payload for PII, finds the route, forwards, and answers **in its own task** with the downstream artifacts plus an `agp-route` artifact.
 
-# %% a2a_coverage=["pattern:8", "extensions", "op:SendMessage", "part:data", "decision"]
+# %% a2a_coverage=["pattern:8", "extensions", "op:SendMessage", "part:data", "decision", "state:COMPLETED"]
 # finance.fx.quote for the EU region
 gw = await agp_client(ROOT)
 res = await send_intent(gw, "finance.fx.quote", {"amount": 100, "from": "USD", "to": "EUR"}, {"region": "EU"})
