@@ -1,0 +1,24 @@
+[project]
+name = "lab00-protocol-fundamentals"
+version = "0.1.0"
+description = "Lab 00 — Protocol fundamentals: every A2A operation against a scripted agent."
+requires-python = ">=3.12,<3.13"
+dependencies = ["a2a-labs-common", "a2a-labs-webhook-receiver"]
+
+[project.scripts]
+lab00-playground = "lab00_protocol.servers.playground:main"
+
+[tool.uv.sources]
+a2a-labs-common = { workspace = true }
+a2a-labs-webhook-receiver = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lab00_protocol"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = ["compose: needs running compose profile", "llm: needs a real model", "slow: long"]

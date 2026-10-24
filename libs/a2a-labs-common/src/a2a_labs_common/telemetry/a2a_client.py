@@ -44,7 +44,7 @@ _STREAMING = {"send_message_streaming", "subscribe"}
 
 
 class _Call:
-    def __init__(self, span: trace.Span, token: object, method: str, agent: str) -> None:
+    def __init__(self, span: trace.Span, token: object | None, method: str, agent: str) -> None:
         self.span, self.token, self.method, self.agent = span, token, method, agent
         self.start = time.perf_counter()
         self.first_event = True
@@ -76,8 +76,14 @@ class TelemetryInterceptor(ClientCallInterceptor):
                 "gen_ai.agent.name": agent,
             },
         )
-        # Make this span current so the httpx child span (and traceparent header) hangs off it.
-        token = otel_context.attach(trace.set_span_in_context(span))
+        # Unary calls: make the span current so the httpx child span (and traceparent header)
+        # hangs off it. Streams are consumed lazily, possibly from another task or after
+        # garbage collection, where detaching a context token fails, so they stay un-attached.
+        token = (
+            None
+            if args.method in _STREAMING
+            else otel_context.attach(trace.set_span_in_context(span))
+        )
         if args.context is None:
             args.context = ClientCallContext()
         args.context.state[_STATE_KEY] = _Call(span, token, args.method, agent)
@@ -180,5 +186,6 @@ def finish(context: ClientCallContext | None, error: BaseException | None = None
     instruments().client_requests.add(1, {**attrs, "outcome": "error" if error else "ok"})
     call.span.end()
     # Detaching from a different task only logs inside OTel, but never let it raise.
-    with contextlib.suppress(Exception):
-        otel_context.detach(call.token)  # type: ignore[arg-type]
+    if call.token is not None:
+        with contextlib.suppress(Exception):
+            otel_context.detach(call.token)  # type: ignore[arg-type]

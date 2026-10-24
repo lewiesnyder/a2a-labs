@@ -10,3 +10,5 @@ config/registry/*.private.jwk
 *.private.jwk
 .coverage
 htmlcov/
+reports/
+.cache/

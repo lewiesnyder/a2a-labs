@@ -1,5 +1,10 @@
 LAB ?=
 SUT ?=
+# Labs with no LLM skip the models-check one-shot (spec 06 §5).
+NO_LLM_LABS := lab00 lab08 lab10
+ifneq ($(filter $(LAB),$(NO_LLM_LABS)),)
+export SKIP_MODEL_CHECK := true
+endif
 PROFILES := $(if $(filter container,$(OLLAMA_MODE)),--profile ollama,)
 
 .PHONY: setup models up down logs notebook test e2e tck lint
@@ -30,8 +35,8 @@ test:
 e2e:
 	$(MAKE) up LAB=$(LAB)
 	uv run scripts/wait_for.py --lab $(LAB)
-	uv run pytest -m compose labs/$(LAB)*
-	uv run pytest --nbmake labs/$(LAB)*/notebooks
+	uv run pytest -m compose labs/$(LAB)-*/tests
+	uv run pytest --nbmake labs/$(LAB)-*/notebooks/*.ipynb
 
 tck:
 	./scripts/run_tck.sh $(SUT)

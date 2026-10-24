@@ -53,6 +53,7 @@ services:
     env_file: [{path: .env, required: false}]
     environment:
       <<: *lab-env
+      SKIP_MODEL_CHECK: ${SKIP_MODEL_CHECK:-false}  # true for non-LLM labs (00, 08, 10)
     command: ["python", "scripts/check_models.py", "--require-all"]
     restart: "no"
 
@@ -64,7 +65,8 @@ services:
       <<: *lab-env
       OTEL_SERVICE_NAME: notebook
     ports: ["8888:8888", "9200:9200"]   # 9200 = embedded push receiver (Lab 08)
-    volumes: [".:/app"]
+    # Not `.:/app`: that would hide the image's /app/.venv behind the host's (macOS) venv, DEV-11.
+    volumes: ["./notebooks:/app/notebooks", "./labs:/app/labs", "./config:/app/config", "./docs:/app/docs"]
     depends_on:
       lgtm: {condition: service_started}
 

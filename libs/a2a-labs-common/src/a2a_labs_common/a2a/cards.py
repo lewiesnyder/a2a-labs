@@ -48,16 +48,19 @@ def skill(
     )
 
 
+def _url(service: str, binding: Binding) -> str:
+    if binding == "JSONRPC":
+        return public_url(service)
+    if binding == "HTTP+JSON":
+        return public_url(service) + REST_PREFIX  # A2A: REST shares the HTTP port under a prefix
+    return public_url(f"{service}-grpc")
+
+
 def interfaces(service: str, bindings: Sequence[Binding]) -> list[AgentInterface]:
     version = settings().a2a_version
-    urls = {
-        "JSONRPC": public_url(service),
-        # A2A: REST shares the HTTP port, mounted under a prefix.
-        "HTTP+JSON": public_url(service) + REST_PREFIX,
-        "GRPC": public_url(f"{service}-grpc"),
-    }
     return [
-        AgentInterface(url=urls[b], protocol_binding=b, protocol_version=version) for b in bindings
+        AgentInterface(url=_url(service, b), protocol_binding=b, protocol_version=version)
+        for b in bindings
     ]
 
 

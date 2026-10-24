@@ -77,8 +77,13 @@ def port(name: str) -> int:
 
 
 def public_url(name: str) -> str:
-    """URL to advertise on the Agent Card: always the docker DNS name (spec 02 §4)."""
-    return str(_entry(name)["docker_url"])
+    """URL to advertise on the Agent Card: reachable from wherever this process runs.
+
+    In compose that is the docker DNS name; a server started on the host (``make run``,
+    the TCK) advertises ``localhost`` URLs so clients on the host can follow the card (DEV-9).
+    """
+    key = "docker_url" if settings().runtime == "docker" else "host_url"
+    return str(_entry(name)[key])
 
 
 def host_url(name: str) -> str:

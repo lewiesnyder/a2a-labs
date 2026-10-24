@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Iterator
 
 import pytest
 from a2a.types import TaskState
@@ -11,10 +12,12 @@ from a2a_labs_common.a2a import cards, ids, methods, states
 
 
 @pytest.fixture(autouse=True)
-def _fresh(monkeypatch: pytest.MonkeyPatch) -> None:
+def _fresh(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     for var in ("A2A_LABS_RUNTIME", "LAB00_PROTOCOL_AGENT_URL", "LAB00_PROTOCOL_AGENT_PORT"):
         monkeypatch.delenv(var, raising=False)
     config.settings.cache_clear()
+    yield
+    config.settings.cache_clear()  # never leave a cached 'docker' runtime for later tests
 
 
 def test_endpoint_host_docker_and_override(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -52,7 +55,9 @@ def test_crosswalk_has_seven_requested_and_eleven_total() -> None:
     assert "tasks/send" in methods.LEGACY_NAMES
 
 
-def test_card_builder_and_validation() -> None:
+def test_card_builder_and_validation(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("A2A_LABS_RUNTIME", "docker")  # inside compose cards advertise docker DNS
+    config.settings.cache_clear()
     s = cards.skill("echo", "Echo", "Echoes text back", ["demo"], ["hi"])
     card = cards.build_card(
         service="lab00-protocol-agent",
@@ -66,6 +71,20 @@ def test_card_builder_and_validation() -> None:
     assert urls["HTTP+JSON"].endswith("/rest")
     assert urls["GRPC"] == "lab00-protocol-agent:10002"
     assert card.capabilities.streaming
+
+
+def test_card_advertises_host_urls_when_running_on_the_host() -> None:
+    card = cards.build_card(
+        service="lab00-protocol-agent",
+        name="n",
+        description="d" * 25,
+        skills=[cards.skill("a", "A", "d", [], [])],
+        bindings=("JSONRPC", "GRPC"),
+    )
+    assert [i.url for i in card.supported_interfaces] == [
+        "http://localhost:10001",
+        "localhost:10002",
+    ]
 
 
 def test_validate_card_reports_problems() -> None:

@@ -11,6 +11,7 @@ from collections.abc import AsyncIterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
+import grpc
 import httpx
 from a2a.client import (
     A2ACardResolver,
@@ -122,7 +123,13 @@ async def connect(
     http.headers.update(hdrs)
     card = await A2ACardResolver(http, _base_url(name_or_url)).get_agent_card()
     bridge_card_urls(card)
-    cfg = ClientConfig(streaming=streaming, httpx_client=http, push_notification_config=push_config)
+    cfg = ClientConfig(
+        streaming=streaming,
+        httpx_client=http,
+        push_notification_config=push_config,
+        # A2A: the gRPC binding needs a channel factory (only used if gRPC is chosen).
+        grpc_channel_factory=lambda url: grpc.aio.insecure_channel(url),
+    )
     if transport:
         cfg.supported_protocol_bindings = [transport]
         cfg.use_client_preference = True

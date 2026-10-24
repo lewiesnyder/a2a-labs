@@ -15,14 +15,14 @@ a2a-labs-webhook-receiver = { workspace = true }
 
 [dependency-groups]
 dev = [
-  "pytest>=8", "pytest-asyncio>=0.24", "pytest-timeout", "pytest-cov", "respx", "nbmake", "papermill",
+  "pytest>=8", "pytest-asyncio>=0.24", "pytest-timeout", "pytest-cov", "respx", "nbmake", "papermill", "jupytext", "nbstripout",
   "ruff>=0.7", "mypy>=1.13", "types-PyYAML", "types-protobuf", "grpc-stubs", "pre-commit", "jupyterlab>=4.3", "ipykernel", "rich",
 ]
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["*.ipynb", "*.md"]  # specs hold illustrative code; never auto-format them
+extend-exclude = ["*.ipynb", "*.md", "**/notebooks/*.py"]  # specs and notebook sources are teaching text, not library code
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "ASYNC", "RUF", "SIM"]
 

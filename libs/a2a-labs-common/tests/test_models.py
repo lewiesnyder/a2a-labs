@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 import httpx
 import pytest
 import respx
@@ -23,9 +25,12 @@ from a2a_labs_common.models.decision import (
 
 
 @pytest.fixture(autouse=True)
-def _env(monkeypatch: pytest.MonkeyPatch) -> None:
+def _env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     for v in ("LLM_PROVIDER", "DECISION_PROVIDER", "QUICK_MODEL", "REASONING_THINK"):
         monkeypatch.delenv(v, raising=False)
+    config.settings.cache_clear()
+    ms.reset_cache()
+    yield
     config.settings.cache_clear()
     ms.reset_cache()
 

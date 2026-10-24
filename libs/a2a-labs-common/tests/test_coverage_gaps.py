@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import atexit
 import logging
+from collections.abc import Iterator
 
 import httpx
 import pytest
@@ -37,7 +38,7 @@ from a2a_labs_common.testing import asgi_client
 
 
 @pytest.fixture(autouse=True)
-def _reset(monkeypatch: pytest.MonkeyPatch) -> None:
+def _reset(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     for v in (
         "LLM_PROVIDER",
         "DECISION_PROVIDER",
@@ -45,6 +46,10 @@ def _reset(monkeypatch: pytest.MonkeyPatch) -> None:
         "DECISION_FALLBACK_ON_ERROR",
     ):
         monkeypatch.delenv(v, raising=False)
+    config.settings.cache_clear()
+    ms.reset_cache()
+    tsetup.reset_for_tests()
+    yield
     config.settings.cache_clear()
     ms.reset_cache()
     tsetup.reset_for_tests()

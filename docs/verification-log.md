@@ -29,3 +29,14 @@ Resolved [VERIFY] items. Columns: item, spec location, finding, decision, date.
 | lgtm provisioning path | 05 §6, 06 §5 | `/otel-lgtm/grafana/conf/provisioning/dashboards/` exists and accepts our `a2a.yaml` mount | Path is correct | 2026-10-23 |
 | lgtm arrival | 05 §8 | A span, a log line and a counter from `init_telemetry` appear in Tempo (:3200), Loki (:3100) and Prometheus (:9090) within ~5 s; the counter becomes `a2a_server_tasks_started_total` | Setup notebook asserts all three | 2026-10-23 |
 | Bedrock adapter | 04 §3.1 | `ChatBedrockConverse` takes `model_id`, not `model` (found by mypy) | Fixed | 2026-10-23 |
+| Push sender wire format | shared-webhook §Verification | `BasePushNotificationSender` POSTs `MessageToDict(StreamResponse)` as JSON; token in header `X-A2A-Notification-Token`; auth as `Authorization: <scheme> <credentials>`; best-effort (failures logged, never raised) | Receiver uses exactly these | 2026-10-24 |
+| Create push config | 01 §2 | `client.create_task_push_notification_config(TaskPushNotificationConfig(task_id, id, url, token))` takes the config directly (no request wrapper, no `config_id` argument) | Used as such | 2026-10-24 |
+| `DefaultRequestHandler.validate_input_modes` | lab00 §5 step 15 | Rejects message parts whose `media_type` the card declares nowhere with `-32005`. `accepted_output_modes` is **not** enforced | See DEV-10 | 2026-10-24 |
+| Extended card hook | lab00 §4 | Handler has `extended_agent_card=` and `extended_card_modifier(card, ServerCallContext)`; no auth guard | DEV-8 | 2026-10-24 |
+| gRPC client | 03 §4 | `ClientConfig(grpc_channel_factory=...)` is required for the GRPC binding | `connect()` always sets it | 2026-10-24 |
+| REST routes | 01 §3 | `create_rest_routes(path_prefix="/rest")` serves v1.0 at `/rest/...` and v0.3 compat at `/rest/v1/...`; extended card at `/rest/extendedAgentCard` | Card advertises `/rest` | 2026-10-24 |
+| Task ownership | lab00 | The task store scopes tasks to `ServerCallContext.user`; another principal gets `TaskNotFoundError` | Documented in notebook step 19 | 2026-10-24 |
+| In-process ASGI streaming | 08 | `httpx.ASGITransport` buffers whole SSE bodies, so streaming-timing tests need a real socket | `live_playground` fixture runs uvicorn in a thread | 2026-10-24 |
+| `SubscribeToTask` on terminal task | 01 §2.1 | Returns `UnsupportedOperationError` over JSON-RPC (gRPC maps it to `FAILED_PRECONDITION`) | As spec'd on JSON-RPC | 2026-10-24 |
+| A2A TCK | 08 §3 | Commit `d4d6fae`; MUST: 212 passed / 4 failed (REST x2, gRPC x2, all SDK) / 19 skipped; JSON-RPC all green | `docs/conformance.md` | 2026-10-24 |
+| lgtm → Tempo trace | 05 §8.1 | `tests/e2e/test_trace_connectivity.py`: notebook + agent spans in one trace (`a2a.client SendStreamingMessage`, `a2a.client SubscribeToTask`, `a2a.server.execute`) | Passes | 2026-10-24 |
