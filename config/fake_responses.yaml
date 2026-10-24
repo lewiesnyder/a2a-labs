@@ -172,3 +172,12 @@ decision:
   - {question: best_candidate, match: "japanese", answer: "Translator B"}
   - {question: best_candidate, match: "korean", answer: "Translator B"}
   - {question: best_candidate, answer: "Translator A"}
+  # Lab 10 pre-flight: reject destructive requests, ask consent for private data, allow the rest
+  - {question: preflight, match: "delete", answer: reject}
+  - {question: preflight, match: "wipe", answer: reject}
+  - {question: preflight, match: "private", answer: needs_auth}
+  - {question: preflight, match: "my appointments", answer: needs_auth}
+  - {question: preflight, answer: allow}
+  # Lab 10 trace-summary agent: topic of the question
+  - {question: topic, match: "capital", answer: geography}
+  - {question: topic, answer: other}

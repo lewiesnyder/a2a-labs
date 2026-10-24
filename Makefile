@@ -1,7 +1,7 @@
 LAB ?=
 SUT ?=
 # Labs with no LLM skip the models-check one-shot (spec 06 §5).
-NO_LLM_LABS := lab00 lab08 lab10
+NO_LLM_LABS := lab00 lab08
 ifneq ($(filter $(LAB),$(NO_LLM_LABS)),)
 export SKIP_MODEL_CHECK := true
 endif

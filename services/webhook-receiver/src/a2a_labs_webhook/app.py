@@ -51,6 +51,9 @@ class Expectation(BaseModel):
     task_id: str | None = None
     token: str | None = None
     agent_jwks_url: str | None = None
+    # The config's `authentication.credentials` (scheme Bearer): a shared secret the agent must
+    # present in `Authorization`. Lab 10's authenticated-push demo; Lab 08 uses the JWT instead.
+    bearer: str | None = None
 
 
 class Store:
@@ -160,8 +163,11 @@ def create_app(require_auth: bool | None = None, store: Store | None = None) -> 
             jwt_detail = ""
             if bearer and exp is not None and exp.agent_jwks_url:
                 jwt_valid, jwt_detail = await verify_jwt(store, bearer, exp.agent_jwks_url, raw)
-            ok = token_valid is not False and jwt_valid is not False
-            authenticated = token_valid is True or jwt_valid is True
+            bearer_valid: bool | None = None
+            if exp is not None and exp.bearer is not None:
+                bearer_valid = bearer == exp.bearer
+            ok = token_valid is not False and jwt_valid is not False and bearer_valid is not False
+            authenticated = token_valid is True or jwt_valid is True or bearer_valid is True
             span.set_attributes(
                 {
                     "a2a.task.id": task_id,
@@ -188,6 +194,7 @@ def create_app(require_auth: bool | None = None, store: Store | None = None) -> 
                     "state": state,
                     "token_valid": token_valid,
                     "jwt_valid": jwt_valid,
+                    "bearer_valid": bearer_valid,
                     "jwt_detail": jwt_detail,
                     "payload": payload,
                 }

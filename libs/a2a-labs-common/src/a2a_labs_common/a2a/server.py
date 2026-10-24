@@ -13,6 +13,7 @@ import grpc
 import httpx
 import uvicorn
 from a2a.server.agent_execution import AgentExecutor
+from a2a.server.context import ServerCallContext
 from a2a.server.request_handlers import DefaultRequestHandler, GrpcHandler, RequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes, create_rest_routes
 from a2a.server.tasks import (
@@ -33,6 +34,8 @@ from a2a_labs_common.config import port, settings
 from a2a_labs_common.telemetry import instrument_app
 from a2a_labs_common.telemetry.a2a_server import TracedExecutor
 
+# A2A: called per GetExtendedAgentCard request with the card and the caller's ServerCallContext.
+ExtendedCardModifier = Callable[[AgentCard, ServerCallContext], Awaitable[AgentCard]]
 PushSenderFactory = Callable[
     [httpx.AsyncClient, PushNotificationConfigStore], PushNotificationSender
 ]
@@ -47,6 +50,7 @@ def build_handler(
     push_config_store: PushNotificationConfigStore | None = None,
     push_sender_factory: PushSenderFactory | None = None,
     extended_card: AgentCard | None = None,
+    extended_card_modifier: ExtendedCardModifier | None = None,
     push_url_validator: Callable[[str], Awaitable[bool]] | None = None,
     validate_input_modes: bool = False,
 ) -> RequestHandler:
@@ -62,6 +66,7 @@ def build_handler(
         push_config_store=store,
         push_sender=sender,
         extended_agent_card=extended_card,
+        extended_card_modifier=extended_card_modifier,
         push_url_validator=push_url_validator,
         validate_input_modes=validate_input_modes,
     )
@@ -75,6 +80,7 @@ def build_a2a_app(
     rest_prefix: str = REST_PREFIX,
     enable_v0_3_compat: bool | None = None,
     middleware: Sequence[Middleware] = (),
+    extra_rpc_urls: Sequence[str] = (),
     handler: RequestHandler | None = None,
     lifespan: Callable[[Starlette], AbstractAsyncContextManager[None]] | None = None,
     **handler_kwargs: object,
@@ -91,6 +97,8 @@ def build_a2a_app(
         *create_agent_card_routes(card),
         *create_jsonrpc_routes(h, rpc_url="/", enable_v0_3_compat=compat),
     ]
+    for extra in extra_rpc_urls:  # e.g. "/v03": the same handler mounted at a second JSON-RPC URL
+        routes += create_jsonrpc_routes(h, rpc_url=extra, enable_v0_3_compat=compat)
     if rest:
         routes += create_rest_routes(h, enable_v0_3_compat=compat, path_prefix=rest_prefix)
     app = Starlette(routes=routes, middleware=list(middleware), lifespan=lifespan)

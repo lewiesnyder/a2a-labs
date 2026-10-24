@@ -57,7 +57,7 @@ services:
     env_file: [{path: .env, required: false}]
     environment:
       <<: *lab-env
-      SKIP_MODEL_CHECK: ${SKIP_MODEL_CHECK:-false}  # true for non-LLM labs (00, 08, 10)
+      SKIP_MODEL_CHECK: ${SKIP_MODEL_CHECK:-false}  # true for non-LLM labs (00, 08)
     command: ["python", "scripts/check_models.py", "--require-all"]
     restart: "no"
 
@@ -109,13 +109,18 @@ services:
       WEBHOOK_REQUIRE_AUTH: ${WEBHOOK_REQUIRE_AUTH:-false}
     ports: ["9100:9100"]
 
+  # Our own small OAuth2/OIDC issuer (DEV-57): navikt/mock-oauth2-server has no device-code flow.
   lab10-mock-idp:
-    image: ghcr.io/navikt/mock-oauth2-server:${MOCK_IDP_VERSION:-2.1.10}   # [VERIFY tag + device-code support]
+    <<: *lab-service
     profiles: [lab10, all]
+    command: [python, -m, lab10_secure.servers.mock_idp]
     environment:
-      SERVER_PORT: "11009"
-      JSON_CONFIG_PATH: /config/mock-idp.json
-    volumes: ["./config/lab10/mock-idp.json:/config/mock-idp.json:ro"]
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab10"
+      OTEL_SERVICE_NAME: "lab10-mock-idp"
+      PORT: "11009"
+      HEALTH_PATH: /healthz
+      IDP_TOKEN_TTL: ${IDP_TOKEN_TTL:-300}
     ports: ["11009:11009"]
 
   lab04-langgraph-agent-server:
@@ -800,6 +805,7 @@ services:
       A2A_LABS_LAB_ID: "lab10"
       OTEL_SERVICE_NAME: "lab10-secure-agent"
       PORT: "11001"
+      PUSH_ALLOWED_HOSTS: ${PUSH_ALLOWED_HOSTS:-webhook-receiver,jupyter,host.docker.internal}
     ports: ['11001:11001']
     depends_on:
       <<: *lab-deps

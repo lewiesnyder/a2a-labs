@@ -161,3 +161,20 @@ async def test_a_rotated_agent_key_is_picked_up_by_refetching_the_jwks(
     second = await c.post("/webhooks/a2a", content=body, headers=hdr(new_priv, "new", "2"))
     assert second.status_code == 200
     assert len(fetches) == 2  # the unknown kid triggered exactly one refetch
+
+
+async def test_bearer_credentials_from_the_push_config_are_checked() -> None:
+    # Lab 10: PushNotificationConfig.authentication {scheme: Bearer, credentials: <secret>}
+    c, _ = client(require_auth=True)
+    await c.post("/expectations", json={"token": "t", "bearer": "s3cret"})
+    sent = {"X-A2A-Notification-Token": "t"}
+    good = await c.post(
+        "/webhooks/a2a", json=TASK, headers={**sent, "Authorization": "Bearer s3cret"}
+    )
+    assert good.status_code == 200
+    for bad in ({}, {"Authorization": "Bearer wrong"}):
+        assert (
+            await c.post("/webhooks/a2a", json=TASK, headers={**sent, **bad})
+        ).status_code == 401
+    rows = (await c.get("/notifications")).json()
+    assert len(rows) == 1 and rows[0]["bearer_valid"] is True

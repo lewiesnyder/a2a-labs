@@ -16,6 +16,7 @@ members = [
     "lab06-registry-discovery",
     "lab07-sequential-chain",
     "lab08-async-push",
+    "lab10-security-extensions",
 ]
 
 [[package]]
@@ -1993,6 +1994,21 @@ requires-dist = [{ name = "a2a-labs-common", extras = ["langchain", "adk", "stra
 name = "lab08-async-push"
 version = "0.1.0"
 source = { editable = "labs/lab08-async-push" }
+dependencies = [
+    { name = "a2a-labs-common", extra = ["adk", "langchain", "strands"] },
+    { name = "a2a-labs-webhook-receiver" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "a2a-labs-common", extras = ["langchain", "adk", "strands"], editable = "libs/a2a-labs-common" },
+    { name = "a2a-labs-webhook-receiver", editable = "services/webhook-receiver" },
+]
+
+[[package]]
+name = "lab10-security-extensions"
+version = "0.1.0"
+source = { editable = "labs/lab10-security-extensions" }
 dependencies = [
     { name = "a2a-labs-common", extra = ["adk", "langchain", "strands"] },
     { name = "a2a-labs-webhook-receiver" },

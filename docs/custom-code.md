@@ -37,3 +37,9 @@ Every `# CUSTOM:` construct in the repo is listed here: location, reason, offici
 | `a2a_labs_common/a2a/push.py` | The SDK sender does not sign; `PushSigner`, `JwtPushNotificationSender`, `make_push_url_validator`, JWKS route. Follows the a2a-samples push-auth pattern | `BasePushNotificationSender` (token header only) |
 | `lab08_push/work_queue.py`, `receivers.py` | A client-side queue over push + `GetTask`; an embedded receiver | none |
 | `lab08_push/servers/adk_research_agent.py` | `to_a2a` cannot wire a push sender (DEV-52) | `to_a2a(push_config_store=)` |
+| `a2a_labs_common/auth.py` | The SDK ships no transport-auth enforcement. Plugs `BearerBackend`/`ApiKeyBackend`/`ChainBackend` into Starlette's `AuthenticationMiddleware` (official), plus `RequireAuth` (401 gate), `JwtVerifier` (JWKS, issuer, audience, expiry), `OAuthClientCredentialsAuth` (`httpx.Auth`) and the ADK `bearer_interceptor` | SDK `AuthInterceptor` (client side only) |
+| `a2a_labs_common/a2a/extensions.py` | The SDK parses `A2A-Extensions` but does not echo the activated set or raise `ExtensionSupportRequiredError`: `ExtensionEcho`, `require_extensions`, `metadata_for` | `ServerCallContext.requested_extensions` (read only) |
+| `lab10_secure/idp.py` | Mock OAuth2/OIDC issuer with the device-code flow and a single-use token reference (navikt/mock-oauth2-server has no device flow, DEV-57) | `ghcr.io/navikt/mock-oauth2-server` |
+| `lab10_secure/idp_client.py` | The agent's side of the device flow and token-reference redemption | none |
+| `lab10_secure/servers/adk_secure.py` | `to_a2a` cannot carry middleware or our card (DEV-58) | `to_a2a(agent_card=)` |
+| `lab10_secure/tenancy.py` | One-line `owner_resolver` (tenant/user); the SDK offers the hook, not a policy | `resolve_user_scope` (user only) |
