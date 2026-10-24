@@ -164,22 +164,59 @@ class OllamaSystemOneDecisionModel(_Base):
         return {k: parse_answer(questions[k].type, v) for k, v in answers.items()}
 
 
+def load_decision_script() -> list[dict[str, Any]]:
+    """The ``decision:`` section of ``config/fake_responses.yaml`` (empty if absent)."""
+    import yaml
+
+    from a2a_labs_common.config import find_config_dir
+
+    path = find_config_dir() / "fake_responses.yaml"
+    data = (yaml.safe_load(path.read_text()) if path.is_file() else {}) or {}
+    return list(data.get("decision") or [])
+
+
 class FakeDecisionModel(_Base):
-    """First option / ``noul=0.9`` unless ``answers`` scripts it (spec 08 §4)."""
+    """First option / ``noul=0.9`` unless scripted (spec 08 §4).
+
+    Two ways to script an answer, both keyed by QUESTION NAME:
+
+    * ``answers={"risk": 2.0}``: explicit, wins always (unit tests).
+    * ``script=[{question, match?, answer}, ...]``: the first entry for the question whose
+      ``match`` is a case-insensitive substring of the evidence wins (no ``match`` = catch-all).
+      ``get_decision_model()`` loads it from ``fake_responses.yaml`` so compose-level runs are
+      deterministic. A ``choice`` answer may be a substring of an option key (``weather`` picks
+      ``Weather Reporter``).
+    """
 
     backend: Backend = "fake"
     model_name = "fake-decision"
 
-    def __init__(self, answers: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, answers: dict[str, Any] | None = None, script: list[dict[str, Any]] | None = None
+    ) -> None:
         self.answers = answers or {}
+        self.script = script or []
+
+    def _scripted(self, name: str, state: str) -> Any:
+        if name in self.answers:
+            return self.answers[name]
+        for entry in self.script:
+            if entry.get("question") == name and entry.get("match", "").lower() in state.lower():
+                return entry["answer"]
+        return None
 
     async def _decide(self, state: str, questions: dict[str, Question]) -> dict[str, Answer]:
         out: dict[str, Answer] = {}
         for name, q in questions.items():
-            scripted = self.answers.get(name)
+            scripted = self._scripted(name, state)
             if q.type == "choice":
                 opts = list(q.criteria)
-                pick = scripted if isinstance(scripted, str) else opts[0]
+                pick = opts[0]
+                if isinstance(scripted, str):
+                    pick = next(
+                        (o for o in opts if o == scripted),
+                        next((o for o in opts if scripted.lower() in o.lower()), opts[0]),
+                    )
                 out[name] = Answer(
                     type="choice", choice=pick, probabilities={o: float(o == pick) for o in opts}
                 )
@@ -268,7 +305,7 @@ class _FallingBack(_Base):
 def get_decision_model() -> DecisionModel:
     cfg = role_config("decision")
     if cfg.provider == "fake":
-        return FakeDecisionModel()
+        return FakeDecisionModel(script=load_decision_script())
     if cfg.provider == "llm_fallback":
         return LLMFallbackDecisionModel(cfg.fallback_role)
     primary = OllamaSystemOneDecisionModel(cfg.base_url, cfg.model, cfg.timeout_s)

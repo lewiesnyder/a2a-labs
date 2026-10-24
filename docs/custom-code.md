@@ -21,3 +21,8 @@ Every `# CUSTOM:` construct in the repo is listed here: location, reason, offici
 | `a2a_labs_common/a2a/langgraph.py` (`graph_factory`) | Lets a graph whose tools load asynchronously (MCP) be built on first use | none |
 | `a2a_labs_common/a2a/langgraph.py` (`RemoteA2ANode`) | No SDK or LangGraph construct calls an A2A agent from a node. Uses only a2a-sdk client calls; carries a remote INPUT_REQUIRED into a local `interrupt()` and forwards the answer to the SAME remote task. Memory of (thread, remote) -> task and forwarded-answer count makes the node replay-safe | none |
 | `lab04_langgraph/servers/{trip_planner,concierge}.py` (`/debug/state/{context_id}`) | Optional route showing that LangGraph's `thread_id` is the A2A `context_id` and exposing `remote_tasks`. Not part of A2A | `graph.aget_state` in-process |
+| `lab05_supervisor/agents/supervisor.py` (`Supervisor`, `delegate`, `split`) | Pattern 4 is not provided by any SDK. Uses LangGraph's official `Send`/conditional edges and the shared `RemoteA2ANode` for every A2A call | none |
+| `lab05_supervisor/discovery.py` (`Directory`) | Card discovery with a TTL and stale-on-error. Uses `fetch_card_sync` (DEV-20) | `A2ACardResolver` (one fetch, no cache) |
+| `lab05_supervisor/ledger.py` | The Delegation Ledger is this lab's teaching object | none |
+| `lab05_supervisor/agents/strands_graph.py` (`A2ANode`, `ClassifyNode`, `GraphAgent`) | Strands' `A2AAgent` and `A2AServer` cannot import on a2a-sdk 1.x (DEV-38); built from `MultiAgentBase`, `GraphBuilder` and `StrandsA2AExecutor` | `A2AAgent` nodes |
+| `lab05_supervisor/servers/*` (`/debug/*`, `/specialists`) | Debug and runtime-registration routes. Not part of A2A | `graph.aget_state` in-process |

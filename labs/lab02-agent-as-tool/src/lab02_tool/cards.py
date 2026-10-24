@@ -10,9 +10,9 @@ from a2a.types import AgentCard
 from a2a_labs_common.a2a.cards import build_card, skill
 
 
-def currency_card() -> AgentCard:
+def currency_card(service: str = "lab02-langgraph-currency") -> AgentCard:
     return build_card(
-        service="lab02-langgraph-currency",
+        service=service,
         name="Currency Converter",
         description="Converts amounts between currencies; asks when the target is missing.",
         skills=[
@@ -27,9 +27,9 @@ def currency_card() -> AgentCard:
     )
 
 
-def weather_card() -> AgentCard:
+def weather_card(service: str = "lab02-strands-weather") -> AgentCard:
     return build_card(
-        service="lab02-strands-weather",
+        service=service,
         name="Weather Reporter",
         description="Reports the weather forecast for a city for up to three days.",
         skills=[
@@ -57,6 +57,24 @@ def controller_card(service: str, name: str) -> AgentCard:
                 "Answers trip questions by calling currency, weather and city-facts specialists.",
                 ["travel", "controller"],
                 ["What's 250 GBP in JPY, and what's the weather in Tokyo?"],
+            )
+        ],
+    )
+
+
+def facts_card(service: str = "lab02-adk-facts") -> AgentCard:
+    """Hand-built for the ADK facts agent: ADK's own card lists its tool as a skill (a leak)."""
+    return build_card(
+        service=service,
+        name="City Facts",
+        description="Gives interesting facts about a city.",
+        skills=[
+            skill(
+                "facts",
+                "City facts",
+                "Returns one interesting fact about a named city.",
+                ["facts", "travel"],
+                ["Tell me a fun fact about Lisbon"],
             )
         ],
     )

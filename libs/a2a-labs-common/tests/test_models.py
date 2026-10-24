@@ -186,3 +186,30 @@ async def test_score_wrapper_orders_dict_probabilities_from_the_live_shape() -> 
     m = OllamaSystemOneDecisionModel("http://o:11434", "nimble-v3:latest")
     score, probs = await m.score("state", "risk?", ["low", "medium", "high"])
     assert score == 1.9 and probs == [0.01, 0.09, 0.9]
+
+
+async def test_fake_decision_script_matches_on_evidence_and_picks_by_substring() -> None:
+    script = [
+        {"question": "route", "match": "weather", "answer": "weather"},
+        {"question": "route", "answer": "none"},
+        {"question": "ambiguous", "match": "help me", "answer": 0.9},
+        {"question": "ambiguous", "answer": 0.1},
+    ]
+    m = FakeDecisionModel(script=script)
+    options = {"Currency Converter": "money", "Weather Reporter": "rain", "none": "other"}
+    route = Question(type="choice", instructions="?", criteria=options)
+    amb = Question(type="noul", instructions="?")
+    hit = await m.decide("Is the Weather nice", {"route": route, "ambiguous": amb})
+    assert hit.answers["route"].choice == "Weather Reporter"  # substring of an option key
+    assert hit.answers["ambiguous"].noul == 0.1
+    miss = await m.decide("Help me with Rome", {"route": route, "ambiguous": amb})
+    assert miss.answers["route"].choice == "none" and miss.answers["ambiguous"].noul == 0.9
+    # explicit answers beat the script; an unknown question keeps the old defaults
+    explicit = FakeDecisionModel({"route": "Currency Converter"}, script=script)
+    assert (await explicit.decide("weather", {"route": route})).answers["route"].choice == (
+        "Currency Converter"
+    )
+    other = await m.decide(
+        "x", {"risk": Question(type="score", instructions="?", criteria=["a", "b"])}
+    )
+    assert other.answers["risk"].score == 1.0

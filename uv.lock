@@ -12,6 +12,7 @@ members = [
     "lab02-agent-as-tool",
     "lab03-mcp-delegation",
     "lab04-langgraph-node",
+    "lab05-supervisor-router",
 ]
 
 [[package]]
@@ -1942,6 +1943,21 @@ requires-dist = [{ name = "a2a-labs-common", extras = ["langchain"], editable = 
 agentserver = [
     { name = "langgraph-api", specifier = ">=0.4.21" },
     { name = "langgraph-cli", extras = ["inmem"] },
+]
+
+[[package]]
+name = "lab05-supervisor-router"
+version = "0.1.0"
+source = { editable = "labs/lab05-supervisor-router" }
+dependencies = [
+    { name = "a2a-labs-common", extra = ["adk", "langchain", "strands"] },
+    { name = "lab02-agent-as-tool" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "a2a-labs-common", extras = ["langchain", "adk", "strands"], editable = "libs/a2a-labs-common" },
+    { name = "lab02-agent-as-tool", editable = "labs/lab02-agent-as-tool" },
 ]
 
 [[package]]

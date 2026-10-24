@@ -302,8 +302,13 @@ class RemoteA2ANode:
         streaming: bool = True,
         progress_key: str = "progress",
         remote_key: str = "remote_tasks",
+        on_update: Callable[[str, str, str, str | None, str], None] | None = None,
     ) -> None:
         self.service = service
+        # Called as ``on_update(thread, service, context_id, task_id, state_name)`` after every
+        # remote reply, so a caller (the Lab 05 delegation ledger) sees a task the moment it
+        # pauses, not only when the node finishes.
+        self.on_update = on_update
         self.input_fn = input_fn
         self.output_key = output_key
         self.streaming = streaming
@@ -320,7 +325,7 @@ class RemoteA2ANode:
             return self._conn
 
     async def _send(
-        self, text: str, sess: _Session, task_id: str | None, progress: list[str]
+        self, thread: str, text: str, sess: _Session, task_id: str | None, progress: list[str]
     ) -> Any:
         conn = await self._connection()
         events = [
@@ -335,6 +340,16 @@ class RemoteA2ANode:
                         progress.append(f"[{self.service}] {msg}")
         result = collect(events)
         sess.task_id = result.task_id or sess.task_id
+        if self.on_update is not None:
+            self.on_update(
+                thread,
+                self.service,
+                sess.context_id,
+                sess.task_id,
+                TaskState.Name(result.state).removeprefix("TASK_STATE_")
+                if result.state
+                else "COMPLETED",
+            )
         return result
 
     @staticmethod
@@ -354,7 +369,7 @@ class RemoteA2ANode:
         try:
             if remembered is None:  # first run of this node for this conversation
                 sess = self._sessions[key] = _Session(derived_context_id(thread, self.service))
-                result = await self._send(self.input_fn(state), sess, None, progress)
+                result = await self._send(thread, self.input_fn(state), sess, None, progress)
             else:  # re-run after an interrupt: do NOT re-send the request
                 sess = remembered
                 for _ in range(sess.forwarded):
@@ -373,7 +388,7 @@ class RemoteA2ANode:
                     if isinstance(value, str)
                     else str(value.get("resume", value) if isinstance(value, dict) else value)
                 )
-                result = await self._send(answer, sess, sess.task_id, progress)
+                result = await self._send(thread, answer, sess, sess.task_id, progress)
         except GraphInterrupt:
             raise  # a pause, not a failure: LangGraph catches it and checkpoints
         except Exception as exc:
