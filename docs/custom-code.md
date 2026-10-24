@@ -34,3 +34,6 @@ Every `# CUSTOM:` construct in the repo is listed here: location, reason, offici
 | `lab07_chain/executors/chain_orchestrator.py` | a2a-sdk has no workflow engine; client calls only | `SequentialAgent` / Strands Graph (implicit hand-off, no provenance) |
 | `lab07_chain/executors/wrappers.py` | Adapt ADK/Strands executors to DataPart in/out | none |
 | `lab07_chain/native.py` (Strands chain) | `A2AAgent` unusable on a2a-sdk 1.x (DEV-19) | `A2AAgent` nodes |
+| `a2a_labs_common/a2a/push.py` | The SDK sender does not sign; `PushSigner`, `JwtPushNotificationSender`, `make_push_url_validator`, JWKS route. Follows the a2a-samples push-auth pattern | `BasePushNotificationSender` (token header only) |
+| `lab08_push/work_queue.py`, `receivers.py` | A client-side queue over push + `GetTask`; an embedded receiver | none |
+| `lab08_push/servers/adk_research_agent.py` | `to_a2a` cannot wire a push sender (DEV-52) | `to_a2a(push_config_store=)` |

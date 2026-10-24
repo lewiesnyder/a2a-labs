@@ -593,7 +593,14 @@ services:
       A2A_LABS_LAB_ID: "lab08"
       OTEL_SERVICE_NAME: "lab08-sdk-report-agent"
       PORT: "10801"
+      LAB08_DB_DIR: /data
+      PHASE_SECONDS: "${PHASE_SECONDS:-5}"
+      DOC_SECONDS: "${DOC_SECONDS:-2}"
+      TOOL_SECONDS: "${TOOL_SECONDS:-6}"
+      NODE_SECONDS: "${NODE_SECONDS:-2}"
+      PUSH_ALLOWED_HOSTS: "${PUSH_ALLOWED_HOSTS:-webhook-receiver,jupyter,host.docker.internal}"
     ports: ['10801:10801']
+    volumes: ['lab08-data:/data']
     depends_on:
       <<: *lab-deps
       webhook-receiver: {condition: service_healthy}
@@ -606,7 +613,14 @@ services:
       A2A_LABS_LAB_ID: "lab08"
       OTEL_SERVICE_NAME: "lab08-strands-batch-agent"
       PORT: "10802"
+      LAB08_DB_DIR: /data
+      PHASE_SECONDS: "${PHASE_SECONDS:-5}"
+      DOC_SECONDS: "${DOC_SECONDS:-2}"
+      TOOL_SECONDS: "${TOOL_SECONDS:-6}"
+      NODE_SECONDS: "${NODE_SECONDS:-2}"
+      PUSH_ALLOWED_HOSTS: "${PUSH_ALLOWED_HOSTS:-webhook-receiver,jupyter,host.docker.internal}"
     ports: ['10802:10802']
+    volumes: ['lab08-data:/data']
     depends_on:
       <<: *lab-deps
       webhook-receiver: {condition: service_healthy}
@@ -619,7 +633,14 @@ services:
       A2A_LABS_LAB_ID: "lab08"
       OTEL_SERVICE_NAME: "lab08-adk-research-agent"
       PORT: "10803"
+      LAB08_DB_DIR: /data
+      PHASE_SECONDS: "${PHASE_SECONDS:-5}"
+      DOC_SECONDS: "${DOC_SECONDS:-2}"
+      TOOL_SECONDS: "${TOOL_SECONDS:-6}"
+      NODE_SECONDS: "${NODE_SECONDS:-2}"
+      PUSH_ALLOWED_HOSTS: "${PUSH_ALLOWED_HOSTS:-webhook-receiver,jupyter,host.docker.internal}"
     ports: ['10803:10803']
+    volumes: ['lab08-data:/data']
     depends_on:
       <<: *lab-deps
       webhook-receiver: {condition: service_healthy}
@@ -632,7 +653,14 @@ services:
       A2A_LABS_LAB_ID: "lab08"
       OTEL_SERVICE_NAME: "lab08-langgraph-pipeline-agent"
       PORT: "10804"
+      LAB08_DB_DIR: /data
+      PHASE_SECONDS: "${PHASE_SECONDS:-5}"
+      DOC_SECONDS: "${DOC_SECONDS:-2}"
+      TOOL_SECONDS: "${TOOL_SECONDS:-6}"
+      NODE_SECONDS: "${NODE_SECONDS:-2}"
+      PUSH_ALLOWED_HOSTS: "${PUSH_ALLOWED_HOSTS:-webhook-receiver,jupyter,host.docker.internal}"
     ports: ['10804:10804']
+    volumes: ['lab08-data:/data']
     depends_on:
       <<: *lab-deps
       webhook-receiver: {condition: service_healthy}
@@ -824,5 +852,6 @@ services:
       lab10-mock-idp: {condition: service_healthy}
 
 volumes:
+  lab08-data: {}
   lgtm-data: {}
   ollama-models: {}

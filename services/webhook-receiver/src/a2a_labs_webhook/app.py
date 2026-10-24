@@ -42,7 +42,13 @@ TOKEN_HEADER = "X-A2A-Notification-Token"
 
 
 class Expectation(BaseModel):
-    task_id: str
+    """What to expect for a task, or (``task_id`` omitted) for every push carrying ``token``.
+
+    A token-keyed expectation can be registered BEFORE the task exists, which is how a client
+    avoids losing the first notifications to a race with ``SendMessage``.
+    """
+
+    task_id: str | None = None
     token: str | None = None
     agent_jwks_url: str | None = None
 
@@ -53,6 +59,8 @@ class Store:
     def __init__(self, size: int = RING_SIZE) -> None:
         self.items: deque[dict[str, Any]] = deque(maxlen=size)
         self.expectations: dict[str, Expectation] = {}
+        self.by_token: dict[str, Expectation] = {}
+        self.seen_jti: dict[str, float] = {}  # replay protection
         self.seq = 0
         self.waiters: list[asyncio.Queue[dict[str, Any]]] = []
         self._jwks: dict[str, tuple[float, dict[str, Any]]] = {}
@@ -76,9 +84,9 @@ class Store:
             and (channel is None or e["channel"] == channel)
         ]
 
-    async def jwks(self, url: str) -> dict[str, Any]:
+    async def jwks(self, url: str, *, refresh: bool = False) -> dict[str, Any]:
         cached = self._jwks.get(url)
-        if cached and time.time() - cached[0] < JWKS_TTL_S:
+        if cached and not refresh and time.time() - cached[0] < JWKS_TTL_S:
             return cached[1]
         async with httpx.AsyncClient(timeout=5) as client:
             resp = await client.get(url)
@@ -89,11 +97,14 @@ class Store:
 
 
 async def verify_jwt(store: Store, bearer: str, jwks_url: str, body: bytes) -> tuple[bool, str]:
-    """Signature via the agent's JWKS (by ``kid``), ``iat`` freshness and optional body hash."""
+    """Agent-JWKS signature (by ``kid``), ``iat`` freshness, body hash and no replayed ``jti``."""
     try:
         kid = jwt.get_unverified_header(bearer).get("kid")
         keys = (await store.jwks(jwks_url)).get("keys", [])
         key = next((k for k in keys if k.get("kid") == kid), None)
+        if key is None:  # unknown kid: the agent may have rotated its key; refetch once
+            keys = (await store.jwks(jwks_url, refresh=True)).get("keys", [])
+            key = next((k for k in keys if k.get("kid") == kid), None)
         if key is None:
             return False, f"no key with kid={kid}"
         claims = jwt.decode(
@@ -107,6 +118,13 @@ async def verify_jwt(store: Store, bearer: str, jwks_url: str, body: bytes) -> t
         expected = claims.get("request_body_sha256")  # [VERIFY claim name in Lab 08]
         if expected and expected != hashlib.sha256(body).hexdigest():
             return False, "request body hash mismatch"
+        jti = claims.get("jti")
+        if jti:
+            now = time.time()
+            store.seen_jti = {k: t for k, t in store.seen_jti.items() if now - t < 2 * IAT_SKEW_S}
+            if jti in store.seen_jti:
+                return False, "replayed jti"
+            store.seen_jti[jti] = now  # only a fully verified notification burns its jti
     except Exception as exc:  # any failure means "not verified"
         return False, f"{type(exc).__name__}: {exc}"
     return True, "ok"
@@ -134,8 +152,8 @@ def create_app(require_auth: bool | None = None, store: Store | None = None) -> 
                 "status_update": event.status_update.task_id,
                 "artifact_update": event.artifact_update.task_id,
             }.get(k, "")
-            exp = store.expectations.get(task_id)
             token = request.headers.get(TOKEN_HEADER)
+            exp = store.expectations.get(task_id) or (store.by_token.get(token) if token else None)
             token_valid = None if exp is None or exp.token is None else token == exp.token
             bearer = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
             jwt_valid: bool | None = None
@@ -187,7 +205,10 @@ def create_app(require_auth: bool | None = None, store: Store | None = None) -> 
 
     @app.post("/expectations")
     async def expect(e: Expectation) -> dict[str, str]:
-        store.expectations[e.task_id] = e
+        if e.task_id:
+            store.expectations[e.task_id] = e
+        elif e.token:
+            store.by_token[e.token] = e
         return {"status": "registered"}
 
     @app.get("/notifications")
@@ -216,6 +237,8 @@ def create_app(require_auth: bool | None = None, store: Store | None = None) -> 
     async def clear() -> dict[str, str]:
         store.items.clear()
         store.expectations.clear()
+        store.by_token.clear()
+        store.seen_jti.clear()
         return {"status": "cleared"}
 
     @app.get("/healthz")

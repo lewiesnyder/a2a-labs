@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import time
+from typing import Any
 
 import httpx
 import jwt
@@ -57,7 +58,7 @@ async def test_jwt_verification(monkeypatch: pytest.MonkeyPatch) -> None:
     jwks = {"keys": [json.loads(key.export_public())]}
     c, store = client(require_auth=True)
 
-    async def fake_jwks(url: str) -> dict[str, object]:
+    async def fake_jwks(url: str, refresh: bool = False) -> dict[str, object]:
         return jwks
 
     monkeypatch.setattr(store, "jwks", fake_jwks)
@@ -89,3 +90,74 @@ async def test_jwt_verification(monkeypatch: pytest.MonkeyPatch) -> None:
             "/webhooks/a2a", content=body, headers={"Authorization": f"Bearer {wrong_kid}"}
         )
     ).status_code == 401
+
+
+async def test_replayed_jti_is_rejected_and_token_expectations_work_before_the_task_exists(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    priv = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    key = jwk.JWK.from_pyca(priv)
+    key.update({"kid": "k1", "alg": "RS256", "use": "sig"})
+    jwks = {"keys": [json.loads(key.export_public())]}
+    c, store = client(require_auth=True)
+
+    async def fake_jwks(url: str, refresh: bool = False) -> dict[str, object]:
+        return jwks
+
+    monkeypatch.setattr(store, "jwks", fake_jwks)
+    # registered by TOKEN, before any task id exists
+    await c.post("/expectations", json={"token": "tok", "agent_jwks_url": "http://agent/jwks"})
+    body = json.dumps(TASK).encode()
+    bearer = jwt.encode(
+        {"iat": time.time(), "jti": "once"}, priv, algorithm="RS256", headers={"kid": "k1"}
+    )
+    headers = {"Authorization": f"Bearer {bearer}", "X-A2A-Notification-Token": "tok"}
+    assert (await c.post("/webhooks/a2a", content=body, headers=headers)).status_code == 200
+    replay = await c.post("/webhooks/a2a", content=body, headers=headers)
+    assert replay.status_code == 401  # the same jti again
+    assert len(store.query()) == 1
+
+
+async def test_a_rotated_agent_key_is_picked_up_by_refetching_the_jwks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def make(kid: str) -> tuple[Any, dict[str, Any]]:
+        priv = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        k = jwk.JWK.from_pyca(priv)
+        k.update({"kid": kid, "alg": "RS256", "use": "sig"})
+        return priv, {"keys": [json.loads(k.export_public())]}
+
+    old_priv, old_jwks = make("old")
+    new_priv, new_jwks = make("new")
+    c, _store = client(require_auth=True)
+    served = {"jwks": old_jwks}
+    fetches: list[str] = []
+
+    class FakeHttp:  # the REAL Store.jwks cache runs; only the HTTP fetch is faked
+        def __init__(self, *a: object, **k: object) -> None: ...
+
+        async def __aenter__(self) -> FakeHttp:
+            return self
+
+        async def __aexit__(self, *a: object) -> None: ...
+
+        async def get(self, url: str) -> httpx.Response:
+            fetches.append(url)
+            return httpx.Response(200, json=served["jwks"], request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(webhook.httpx, "AsyncClient", FakeHttp)
+    await c.post("/expectations", json={"token": "t", "agent_jwks_url": "http://agent/jwks"})
+    body = json.dumps(TASK).encode()
+
+    def hdr(priv: Any, kid: str, jti: str) -> dict[str, str]:
+        t = jwt.encode(
+            {"iat": time.time(), "jti": jti}, priv, algorithm="RS256", headers={"kid": kid}
+        )
+        return {"Authorization": f"Bearer {t}", "X-A2A-Notification-Token": "t"}
+
+    first = await c.post("/webhooks/a2a", content=body, headers=hdr(old_priv, "old", "1"))
+    assert first.status_code == 200
+    served["jwks"] = new_jwks  # the agent restarted with a new key; the old JWKS is still cached
+    second = await c.post("/webhooks/a2a", content=body, headers=hdr(new_priv, "new", "2"))
+    assert second.status_code == 200
+    assert len(fetches) == 2  # the unknown kid triggered exactly one refetch
