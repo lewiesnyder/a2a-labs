@@ -16,6 +16,17 @@ quick:
     framework: adk
     reply: "Portuguese: Bom dia, como você está?\nJapanese: おはようございます、お元気ですか？"
 
+  # ── Lab 09 squads (ADK and Strands call their one deterministic tool with the request) ─────
+  - {match: "finance.payments.initiate", framework: strands, tool_calls: [{name: handle_payments, args: {request: "{last}"}}], reply: "{results}"}
+  - {match: "finance.compliance.check", framework: adk, tool_calls: [{name: handle_compliance, args: {request: "{last}"}}], reply: "{results}"}
+  - {match: "travel.flights.search", framework: adk, tool_calls: [{name: handle_flights, args: {request: "{last}"}}], reply: "{results}"}
+  - {match: "finance.fx.quote", framework: strands, tool_calls: [{name: handle_hotels, args: {request: "{last}"}}], reply: "{results}"}
+  - {match: "travel.hotels.search", framework: strands, tool_calls: [{name: handle_hotels, args: {request: "{last}"}}], reply: "{results}"}
+  - {match: "flights", framework: adk, tool_calls: [{name: handle_flights, args: {request: "{last}"}}], reply: "{results}"}
+  - {match: "hotel", framework: strands, tool_calls: [{name: handle_hotels, args: {request: "{last}"}}], reply: "{results}"}
+  - {match: "payment", framework: strands, tool_calls: [{name: handle_payments, args: {request: "{last}"}}], reply: "{results}"}
+  - {match: "compliance", framework: adk, tool_calls: [{name: handle_compliance, args: {request: "{last}"}}], reply: "{results}"}
+
   # ── Lab 05: the supervisor's `split` step returns one sub-request per specialist ───────────
   - match: "Request: What is the weather in Tokyo and convert 50 EUR"
     reply: >-
@@ -181,3 +192,17 @@ decision:
   # Lab 10 trace-summary agent: topic of the question
   - {question: topic, match: "capital", answer: geography}
   - {question: topic, answer: other}
+  # Lab 09 gateways: PII screen (noul) and the non-AGP fallback choice (domain, then squad)
+  - {question: pii, match: passport, answer: 0.95}
+  - {question: pii, match: "ssn", answer: 0.95}
+  - {question: pii, answer: 0.05}
+  - {question: domain, match: "visa", answer: travel}
+  - {question: domain, match: "flight", answer: travel}
+  - {question: domain, match: "hotel", answer: travel}
+  - {question: domain, answer: finance}
+  - {question: squad, match: "visa", answer: visa}
+  - {question: squad, match: "flight", answer: flights}
+  - {question: squad, match: "hotel", answer: hotels}
+  - {question: squad, match: "payment", answer: payments}
+  - {question: squad, match: "compliance", answer: compliance}
+  - {question: squad, answer: fx}

@@ -678,6 +678,8 @@ services:
       A2A_LABS_LAB_ID: "lab09"
       OTEL_SERVICE_NAME: "lab09-squad-payments"
       PORT: "10911"
+      AGP_TTL_S: "${AGP_TTL_S:-20}"            # route lifetime (spec default 120; short for the failover demo)
+      AGP_REANNOUNCE_S: "${AGP_REANNOUNCE_S:-5}"
       AGP_PARENT: "lab09-finance-gateway"
     ports: ['10911:10911']
     depends_on:
@@ -692,6 +694,8 @@ services:
       A2A_LABS_LAB_ID: "lab09"
       OTEL_SERVICE_NAME: "lab09-squad-fx"
       PORT: "10912"
+      AGP_TTL_S: "${AGP_TTL_S:-20}"            # route lifetime (spec default 120; short for the failover demo)
+      AGP_REANNOUNCE_S: "${AGP_REANNOUNCE_S:-5}"
       AGP_PARENT: "lab09-finance-gateway"
     ports: ['10912:10912']
     depends_on:
@@ -706,6 +710,8 @@ services:
       A2A_LABS_LAB_ID: "lab09"
       OTEL_SERVICE_NAME: "lab09-squad-compliance"
       PORT: "10913"
+      AGP_TTL_S: "${AGP_TTL_S:-20}"            # route lifetime (spec default 120; short for the failover demo)
+      AGP_REANNOUNCE_S: "${AGP_REANNOUNCE_S:-5}"
       AGP_PARENT: "lab09-finance-gateway"
     ports: ['10913:10913']
     depends_on:
@@ -720,6 +726,8 @@ services:
       A2A_LABS_LAB_ID: "lab09"
       OTEL_SERVICE_NAME: "lab09-squad-flights"
       PORT: "10914"
+      AGP_TTL_S: "${AGP_TTL_S:-20}"            # route lifetime (spec default 120; short for the failover demo)
+      AGP_REANNOUNCE_S: "${AGP_REANNOUNCE_S:-5}"
       AGP_PARENT: "lab09-travel-gateway"
     ports: ['10914:10914']
     depends_on:
@@ -734,6 +742,8 @@ services:
       A2A_LABS_LAB_ID: "lab09"
       OTEL_SERVICE_NAME: "lab09-squad-hotels"
       PORT: "10915"
+      AGP_TTL_S: "${AGP_TTL_S:-20}"            # route lifetime (spec default 120; short for the failover demo)
+      AGP_REANNOUNCE_S: "${AGP_REANNOUNCE_S:-5}"
       AGP_PARENT: "lab09-travel-gateway"
     ports: ['10915:10915']
     depends_on:
@@ -748,6 +758,8 @@ services:
       A2A_LABS_LAB_ID: "lab09"
       OTEL_SERVICE_NAME: "lab09-squad-visa"
       PORT: "10916"
+      AGP_TTL_S: "${AGP_TTL_S:-20}"            # route lifetime (spec default 120; short for the failover demo)
+      AGP_REANNOUNCE_S: "${AGP_REANNOUNCE_S:-5}"
       AGP_PARENT: "lab09-travel-gateway"
     ports: ['10916:10916']
     depends_on:
@@ -762,6 +774,8 @@ services:
       A2A_LABS_LAB_ID: "lab09"
       OTEL_SERVICE_NAME: "lab09-root-gateway"
       PORT: "10901"
+      AGP_TTL_S: "${AGP_TTL_S:-20}"            # route lifetime (spec default 120; short for the failover demo)
+      AGP_REANNOUNCE_S: "${AGP_REANNOUNCE_S:-5}"
       AGP_ROLE: "root"
     ports: ['10901:10901']
   lab09-finance-gateway:
@@ -773,6 +787,8 @@ services:
       A2A_LABS_LAB_ID: "lab09"
       OTEL_SERVICE_NAME: "lab09-finance-gateway"
       PORT: "10902"
+      AGP_TTL_S: "${AGP_TTL_S:-20}"            # route lifetime (spec default 120; short for the failover demo)
+      AGP_REANNOUNCE_S: "${AGP_REANNOUNCE_S:-5}"
       AGP_ROLE: "domain"
       AGP_DOMAIN: "finance"
       AGP_PARENT: "lab09-root-gateway"
@@ -789,6 +805,8 @@ services:
       A2A_LABS_LAB_ID: "lab09"
       OTEL_SERVICE_NAME: "lab09-travel-gateway"
       PORT: "10903"
+      AGP_TTL_S: "${AGP_TTL_S:-20}"            # route lifetime (spec default 120; short for the failover demo)
+      AGP_REANNOUNCE_S: "${AGP_REANNOUNCE_S:-5}"
       AGP_ROLE: "domain"
       AGP_DOMAIN: "travel"
       AGP_PARENT: "lab09-root-gateway"

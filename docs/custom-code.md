@@ -43,3 +43,7 @@ Every `# CUSTOM:` construct in the repo is listed here: location, reason, offici
 | `lab10_secure/idp_client.py` | The agent's side of the device flow and token-reference redemption | none |
 | `lab10_secure/servers/adk_secure.py` | `to_a2a` cannot carry middleware or our card (DEV-58) | `to_a2a(agent_card=)` |
 | `lab10_secure/tenancy.py` | One-line `owner_resolver` (tenant/user); the SDK offers the hook, not a policy | `resolve_user_scope` (user only) |
+| `a2a_labs_common/agp.py` | AGP is not in any SDK: models, `AgpTable`, policy matching, message helpers, AGP errors and their registration in the SDK's error dicts (DEV-63) | none (spec sample is a print-only simulation) |
+| `a2a_labs_common/agp_gateway.py` | `AgpGatewayExecutor`, `Announcer`, `agp_announce`: routing, failover, fallback, task mirroring | `SequentialAgent`/supervisors (Labs 05/07) route by LLM, not by capability and policy |
+| `lab09_agp/servers/common.py` (`/agp/*`) | Lab-only table dump and pause/resume endpoints | none |
+| `lab09_agp/agents/squad_agents.py` | Squad agents wrapping deterministic handlers (DEV-66) | none |
