@@ -17,6 +17,7 @@ models:
 	uv run scripts/check_models.py
 
 up:
+	$(if $(filter lab06 all,$(LAB)),uv run scripts/gen_lab06_keys.py)
 	docker compose $(PROFILES) --profile $(LAB) up -d --build
 
 down:

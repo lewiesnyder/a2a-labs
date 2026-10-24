@@ -1,0 +1,27 @@
+[project]
+name = "lab06-registry-discovery"
+version = "0.1.0"
+description = "Lab 06 — Registry and discovery (A2A pattern 5): signed Agent Cards, a trust store, a curated registry and a verifying delegator."
+requires-python = ">=3.12,<3.13"
+# lab00 supplies the bearer-token guard for the extended card (the Lab 10 preview).
+dependencies = ["a2a-labs-common[langchain,adk,strands]", "lab00-protocol-fundamentals"]
+
+[project.scripts]
+lab06-registry = "lab06_registry.servers.registry:main"
+lab06-delegator = "lab06_registry.servers.delegator:main"
+
+[tool.uv.sources]
+a2a-labs-common = { workspace = true }
+lab00-protocol-fundamentals = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lab06_registry"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "--import-mode=importlib"  # several labs share test module names
+markers = ["compose: needs running compose profile", "llm: needs a real model", "slow: long"]

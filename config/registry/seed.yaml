@@ -1,0 +1,6 @@
+# Agents the registry registers at startup (service names from config/endpoints.yaml, or URLs).
+# The rogue is on the list on purpose: it must end up quarantined, never returned.
+agents:
+  - lab06-agent-a
+  - lab06-agent-b
+  - lab06-agent-rogue

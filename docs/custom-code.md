@@ -26,3 +26,7 @@ Every `# CUSTOM:` construct in the repo is listed here: location, reason, offici
 | `lab05_supervisor/ledger.py` | The Delegation Ledger is this lab's teaching object | none |
 | `lab05_supervisor/agents/strands_graph.py` (`A2ANode`, `ClassifyNode`, `GraphAgent`) | Strands' `A2AAgent` and `A2AServer` cannot import on a2a-sdk 1.x (DEV-38); built from `MultiAgentBase`, `GraphBuilder` and `StrandsA2AExecutor` | `A2AAgent` nodes |
 | `lab05_supervisor/servers/*` (`/debug/*`, `/specialists`) | Debug and runtime-registration routes. Not part of A2A | `graph.aget_state` in-process |
+| `a2a_labs_common/a2a/trust.py` | The SDK provides sign/verify primitives (`a2a.utils.signing`), not a trust policy. Adds the trust store, name/host binding, freshness and the report; keys never come from the card's host | `create_signature_verifier` alone (checks the signature, not who signed) |
+| `a2a_labs_common/a2a/client.py` (`connect_with_card`) | Connect from a card you already verified, without re-fetching | `create_client(card)` (this wraps it with our interceptors) |
+| `lab06_registry/registry.py` | The A2A spec describes curated registries but defines no API; stores cards plus a verdict | none |
+| `lab06_registry/servers/agent_rogue.py` (`/_rogue/*`) | Lab-only control and counter endpoints | none |

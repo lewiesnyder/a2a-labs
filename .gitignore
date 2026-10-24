@@ -12,3 +12,5 @@ config/registry/*.private.jwk
 htmlcov/
 reports/
 .cache/
+config/registry/trust_store.json
+config/registry/injected/

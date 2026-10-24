@@ -3,6 +3,14 @@
 quick:
   - {match: "say ping", reply: "pong"}
 
+  # ── Lab 06: the translators (the delegator's choice is scripted under `decision:`) ─────────
+  - match: "good morning"
+    framework: strands
+    reply: "Spanish: Buenos días, ¿cómo estás?"
+  - match: "good morning"
+    framework: adk
+    reply: "Portuguese: Bom dia, como você está?\nJapanese: おはようございます、お元気ですか？"
+
   # ── Lab 05: the supervisor's `split` step returns one sub-request per specialist ───────────
   - match: "Request: What is the weather in Tokyo and convert 50 EUR"
     reply: >-
@@ -151,3 +159,7 @@ decision:
   - {question: multi, match: "plus one fun fact", answer: 0.9}
   - {question: multi, answer: 0.1}
   - {question: answered, answer: 0.9}
+  # Lab 06 delegator: Translator B knows Japanese, Translator A does not
+  - {question: best_candidate, match: "japanese", answer: "Translator B"}
+  - {question: best_candidate, match: "korean", answer: "Translator B"}
+  - {question: best_candidate, answer: "Translator A"}

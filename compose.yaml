@@ -494,6 +494,7 @@ services:
       A2A_LABS_LAB_ID: "lab06"
       OTEL_SERVICE_NAME: "lab06-agent-b"
       PORT: "10603"
+      AGENT_B_VERSION: "${AGENT_B_VERSION:-1.0.0}"
     ports: ['10603:10603']
   lab06-agent-rogue:
     <<: *lab-service
@@ -517,6 +518,7 @@ services:
       PORT: "10601"
       HEALTH_PATH: "/healthz"
     ports: ['10601:10601']
+    volumes: ['./config/registry:/app/config/registry:ro']  # keys + trust store (git-ignored)
     depends_on:
       <<: *lab-deps
       lab06-agent-a: {condition: service_healthy}
@@ -531,7 +533,9 @@ services:
       A2A_LABS_LAB_ID: "lab06"
       OTEL_SERVICE_NAME: "lab06-delegator"
       PORT: "10605"
+      DELEGATOR_INJECTED_CARDS: "${DELEGATOR_INJECTED_CARDS:-}"
     ports: ['10605:10605']
+    volumes: ['./config/registry:/app/config/registry:ro']  # keys + trust store (git-ignored)
     depends_on:
       <<: *lab-deps
       lab06-registry: {condition: service_healthy}

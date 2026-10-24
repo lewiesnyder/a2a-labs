@@ -123,6 +123,31 @@ async def connect(
     http.headers.update(hdrs)
     card = await A2ACardResolver(http, _base_url(name_or_url)).get_agent_card()
     bridge_card_urls(card)
+    return await connect_with_card(
+        card,
+        name=name_or_url,
+        http=http,
+        streaming=streaming,
+        push_config=push_config,
+        auth=auth,
+        transport=transport,
+    )
+
+
+async def connect_with_card(
+    card: AgentCard,
+    *,
+    name: str | None = None,
+    http: httpx.AsyncClient | None = None,
+    streaming: bool = True,
+    push_config: TaskPushNotificationConfig | None = None,
+    auth: CredentialService | None = None,
+    transport: Binding | None = None,
+) -> Connected:
+    """Connect using a card you already hold (e.g. one you verified): nothing is re-fetched."""
+    http = http or httpx.AsyncClient(
+        timeout=60, headers={"A2A-Version": config.settings().a2a_version}
+    )
     cfg = ClientConfig(
         streaming=streaming,
         httpx_client=http,
@@ -137,7 +162,7 @@ async def connect(
     if auth is not None:
         interceptors.append(AuthInterceptor(auth))
     client = await create_client(card, client_config=cfg, interceptors=interceptors)
-    return Connected(name=name_or_url, card=card, client=client, httpx_client=http)
+    return Connected(name=name or card.name, card=card, client=client, httpx_client=http)
 
 
 def _request(

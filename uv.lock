@@ -13,6 +13,7 @@ members = [
     "lab03-mcp-delegation",
     "lab04-langgraph-node",
     "lab05-supervisor-router",
+    "lab06-registry-discovery",
 ]
 
 [[package]]
@@ -1958,6 +1959,21 @@ dependencies = [
 requires-dist = [
     { name = "a2a-labs-common", extras = ["langchain", "adk", "strands"], editable = "libs/a2a-labs-common" },
     { name = "lab02-agent-as-tool", editable = "labs/lab02-agent-as-tool" },
+]
+
+[[package]]
+name = "lab06-registry-discovery"
+version = "0.1.0"
+source = { editable = "labs/lab06-registry-discovery" }
+dependencies = [
+    { name = "a2a-labs-common", extra = ["adk", "langchain", "strands"] },
+    { name = "lab00-protocol-fundamentals" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "a2a-labs-common", extras = ["langchain", "adk", "strands"], editable = "libs/a2a-labs-common" },
+    { name = "lab00-protocol-fundamentals", editable = "labs/lab00-protocol-fundamentals" },
 ]
 
 [[package]]
