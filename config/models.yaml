@@ -1,0 +1,34 @@
+# config/models.yaml — see 04-model-providers.md
+defaults:
+  provider: ollama
+  base_url: ${OLLAMA_BASE_URL:-http://localhost:11434}
+
+roles:
+  reasoning:
+    provider: ${REASONING_PROVIDER:-ollama}
+    model: ${REASONING_MODEL:-qwen3.8:27b}
+    temperature: 0.2
+    max_tokens: 4096
+    think: ${REASONING_THINK:-true}        # qwen3.8 thinking; set false for low-latency demos
+    reasoning_effort: ${REASONING_EFFORT:-medium}   # passed only when the provider supports it
+    num_ctx: 32768                         # Ollama option; keep memory reasonable
+  quick:
+    provider: ${QUICK_PROVIDER:-ollama}
+    model: ${QUICK_MODEL:-llama3.2:latest}
+    temperature: 0.1
+    max_tokens: 1024
+    num_ctx: 8192
+  decision:
+    provider: ${DECISION_PROVIDER:-ollama_systemone}   # or: llm_fallback
+    model: ${DECISION_MODEL:-nimble-v3:latest}
+    fallback_role: quick                   # used when provider=llm_fallback or systemone unavailable
+    timeout_s: 30
+
+providers:
+  ollama:          { base_url: ${OLLAMA_BASE_URL:-http://localhost:11434} }
+  openai:          { api_key_env: OPENAI_API_KEY, base_url: ${OPENAI_BASE_URL:-} }
+  anthropic:       { api_key_env: ANTHROPIC_API_KEY }
+  gemini:          { api_key_env: GOOGLE_API_KEY }
+  bedrock:         { region: ${AWS_REGION:-us-east-1} }
+  openai_compatible: { base_url: ${OPENAI_COMPAT_BASE_URL:-}, api_key_env: OPENAI_COMPAT_API_KEY }  # vLLM, LM Studio, etc.
+  ollama_systemone: { base_url: ${OLLAMA_BASE_URL:-http://localhost:11434} }

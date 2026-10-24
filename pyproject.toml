@@ -1,0 +1,38 @@
+[project]
+name = "a2a-labs"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["libs/*", "services/*", "labs/*"]
+
+[tool.uv.sources]
+a2a-labs-common = { workspace = true }
+a2a-labs-webhook-receiver = { workspace = true }
+
+[dependency-groups]
+dev = [
+  "pytest>=8", "pytest-asyncio>=0.24", "pytest-timeout", "respx", "nbmake", "papermill",
+  "ruff>=0.7", "mypy>=1.13", "pre-commit", "jupyterlab>=4.3", "ipykernel", "rich",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC", "RUF", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+[[tool.mypy.overrides]]
+module = ["strands.*", "google.adk.*", "litellm.*", "a2a.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = ["compose: needs running compose profile", "llm: needs a real model", "slow: long"]

@@ -1,0 +1,247 @@
+# config/endpoints.yaml — generated from compose.yaml; single source for ports/URLs
+services:
+  webhook-receiver:
+    port: 9100
+    docker_url: http://webhook-receiver:9100
+    host_url: http://localhost:9100
+  lab10-mock-idp:
+    port: 11009
+    docker_url: http://lab10-mock-idp:11009
+    host_url: http://localhost:11009
+  lab04-langgraph-agent-server:
+    port: 10403
+    docker_url: http://lab04-langgraph-agent-server:10403
+    host_url: http://localhost:10403
+  lab00-protocol-agent:
+    port: 10001
+    docker_url: http://lab00-protocol-agent:10001
+    host_url: http://localhost:10001
+  lab00-protocol-agent-grpc:
+    port: 10002
+    docker_url: lab00-protocol-agent:10002
+    host_url: localhost:10002
+  lab00-protocol-agent-nostream:
+    port: 10003
+    docker_url: http://lab00-protocol-agent-nostream:10003
+    host_url: http://localhost:10003
+  lab00-protocol-agent-nopush:
+    port: 10004
+    docker_url: http://lab00-protocol-agent-nopush:10004
+    host_url: http://localhost:10004
+  lab01-sdk-echo:
+    port: 10101
+    docker_url: http://lab01-sdk-echo:10101
+    host_url: http://localhost:10101
+  lab01-adk-agent:
+    port: 10102
+    docker_url: http://lab01-adk-agent:10102
+    host_url: http://localhost:10102
+  lab01-strands-agent:
+    port: 10103
+    docker_url: http://lab01-strands-agent:10103
+    host_url: http://localhost:10103
+  lab01-langgraph-agent:
+    port: 10104
+    docker_url: http://lab01-langgraph-agent:10104
+    host_url: http://localhost:10104
+  lab02-langgraph-currency:
+    port: 10201
+    docker_url: http://lab02-langgraph-currency:10201
+    host_url: http://localhost:10201
+  lab02-strands-weather:
+    port: 10202
+    docker_url: http://lab02-strands-weather:10202
+    host_url: http://localhost:10202
+  lab02-adk-facts:
+    port: 10203
+    docker_url: http://lab02-adk-facts:10203
+    host_url: http://localhost:10203
+  lab02-adk-controller:
+    port: 10204
+    docker_url: http://lab02-adk-controller:10204
+    host_url: http://localhost:10204
+  lab02-strands-controller:
+    port: 10205
+    docker_url: http://lab02-strands-controller:10205
+    host_url: http://localhost:10205
+  lab02-langchain-controller:
+    port: 10206
+    docker_url: http://lab02-langchain-controller:10206
+    host_url: http://localhost:10206
+  lab03-tools-mcp:
+    port: 10301
+    docker_url: http://lab03-tools-mcp:10301/mcp
+    host_url: http://localhost:10301/mcp
+  lab03-strands-specialist:
+    port: 10302
+    docker_url: http://lab03-strands-specialist:10302
+    host_url: http://localhost:10302
+  lab03-adk-specialist:
+    port: 10303
+    docker_url: http://lab03-adk-specialist:10303
+    host_url: http://localhost:10303
+  lab03-mcp-a2a-bridge:
+    port: 10304
+    docker_url: http://lab03-mcp-a2a-bridge:10304/mcp
+    host_url: http://localhost:10304/mcp
+  lab03-langgraph-mcp-consumer:
+    port: 10305
+    docker_url: http://lab03-langgraph-mcp-consumer:10305
+    host_url: http://localhost:10305
+  lab03-adk-mcp-consumer:
+    port: 10306
+    docker_url: http://lab03-adk-mcp-consumer:10306
+    host_url: http://localhost:10306
+  lab04-langgraph-travel:
+    port: 10401
+    docker_url: http://lab04-langgraph-travel:10401
+    host_url: http://localhost:10401
+  lab04-langgraph-orchestrator:
+    port: 10402
+    docker_url: http://lab04-langgraph-orchestrator:10402
+    host_url: http://localhost:10402
+  lab05-currency:
+    port: 10502
+    docker_url: http://lab05-currency:10502
+    host_url: http://localhost:10502
+  lab05-weather:
+    port: 10503
+    docker_url: http://lab05-weather:10503
+    host_url: http://localhost:10503
+  lab05-facts:
+    port: 10504
+    docker_url: http://lab05-facts:10504
+    host_url: http://localhost:10504
+  lab05-supervisor:
+    port: 10501
+    docker_url: http://lab05-supervisor:10501
+    host_url: http://localhost:10501
+  lab05-adk-coordinator:
+    port: 10505
+    docker_url: http://lab05-adk-coordinator:10505
+    host_url: http://localhost:10505
+  lab05-strands-graph-supervisor:
+    port: 10506
+    docker_url: http://lab05-strands-graph-supervisor:10506
+    host_url: http://localhost:10506
+  lab06-agent-a:
+    port: 10602
+    docker_url: http://lab06-agent-a:10602
+    host_url: http://localhost:10602
+  lab06-agent-b:
+    port: 10603
+    docker_url: http://lab06-agent-b:10603
+    host_url: http://localhost:10603
+  lab06-agent-rogue:
+    port: 10604
+    docker_url: http://lab06-agent-rogue:10604
+    host_url: http://localhost:10604
+  lab06-registry:
+    port: 10601
+    docker_url: http://lab06-registry:10601
+    host_url: http://localhost:10601
+  lab06-delegator:
+    port: 10605
+    docker_url: http://lab06-delegator:10605
+    host_url: http://localhost:10605
+  lab07-adk-planner:
+    port: 10701
+    docker_url: http://lab07-adk-planner:10701
+    host_url: http://localhost:10701
+  lab07-strands-writer:
+    port: 10702
+    docker_url: http://lab07-strands-writer:10702
+    host_url: http://localhost:10702
+  lab07-langgraph-editor:
+    port: 10703
+    docker_url: http://lab07-langgraph-editor:10703
+    host_url: http://localhost:10703
+  lab07-chain-orchestrator:
+    port: 10704
+    docker_url: http://lab07-chain-orchestrator:10704
+    host_url: http://localhost:10704
+  lab08-sdk-report-agent:
+    port: 10801
+    docker_url: http://lab08-sdk-report-agent:10801
+    host_url: http://localhost:10801
+  lab08-strands-batch-agent:
+    port: 10802
+    docker_url: http://lab08-strands-batch-agent:10802
+    host_url: http://localhost:10802
+  lab08-adk-research-agent:
+    port: 10803
+    docker_url: http://lab08-adk-research-agent:10803
+    host_url: http://localhost:10803
+  lab08-langgraph-pipeline-agent:
+    port: 10804
+    docker_url: http://lab08-langgraph-pipeline-agent:10804
+    host_url: http://localhost:10804
+  lab09-squad-payments:
+    port: 10911
+    docker_url: http://lab09-squad-payments:10911
+    host_url: http://localhost:10911
+  lab09-squad-fx:
+    port: 10912
+    docker_url: http://lab09-squad-fx:10912
+    host_url: http://localhost:10912
+  lab09-squad-compliance:
+    port: 10913
+    docker_url: http://lab09-squad-compliance:10913
+    host_url: http://localhost:10913
+  lab09-squad-flights:
+    port: 10914
+    docker_url: http://lab09-squad-flights:10914
+    host_url: http://localhost:10914
+  lab09-squad-hotels:
+    port: 10915
+    docker_url: http://lab09-squad-hotels:10915
+    host_url: http://localhost:10915
+  lab09-squad-visa:
+    port: 10916
+    docker_url: http://lab09-squad-visa:10916
+    host_url: http://localhost:10916
+  lab09-root-gateway:
+    port: 10901
+    docker_url: http://lab09-root-gateway:10901
+    host_url: http://localhost:10901
+  lab09-finance-gateway:
+    port: 10902
+    docker_url: http://lab09-finance-gateway:10902
+    host_url: http://localhost:10902
+  lab09-travel-gateway:
+    port: 10903
+    docker_url: http://lab09-travel-gateway:10903
+    host_url: http://localhost:10903
+  lab10-secure-agent:
+    port: 11001
+    docker_url: http://lab10-secure-agent:11001
+    host_url: http://localhost:11001
+  lab10-ext-agent:
+    port: 11002
+    docker_url: http://lab10-ext-agent:11002
+    host_url: http://localhost:11002
+  lab10-required-ext-agent:
+    port: 11003
+    docker_url: http://lab10-required-ext-agent:11003
+    host_url: http://localhost:11003
+  lab10-adk-secure:
+    port: 11004
+    docker_url: http://lab10-adk-secure:11004
+    host_url: http://localhost:11004
+  lab10-strands-secure:
+    port: 11005
+    docker_url: http://lab10-strands-secure:11005
+    host_url: http://localhost:11005
+infra:
+  ollama:
+    docker_url: http://host.docker.internal:11434
+    host_url: http://localhost:11434
+  lgtm_otlp:
+    docker_url: http://lgtm:4317
+    host_url: http://localhost:4317
+  grafana:
+    docker_url: http://lgtm:3000
+    host_url: http://localhost:3000
+  tempo_api:
+    docker_url: http://lgtm:3200
+    host_url: http://localhost:3200
