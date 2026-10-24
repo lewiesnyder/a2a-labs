@@ -1,0 +1,815 @@
+# compose.yaml — a2a-labs (generated skeleton; keep in sync with 06-docker-compose.md and lab specs)
+name: a2a-labs
+
+x-ollama-env: &ollama-env
+  OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+  OLLAMA_API_BASE: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+
+x-lab-env: &lab-env
+  <<: *ollama-env
+  A2A_LABS_RUNTIME: docker
+  A2A_LABS_CONFIG_DIR: /app/config
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4317
+  OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+  OTEL_SEMCONV_STABILITY_OPT_IN: gen_ai_latest_experimental
+  ADK_SUPPRESS_A2A_EXPERIMENTAL_FEATURE_WARNINGS: "true"
+
+x-lab-deps: &lab-deps
+  lgtm: {condition: service_started}
+  models-check: {condition: service_completed_successfully}
+
+x-lab-service: &lab-service
+  image: a2a-labs:dev
+  build: {context: ., dockerfile: docker/Dockerfile}
+  extra_hosts: ["host.docker.internal:host-gateway"]
+  env_file: [{path: .env, required: false}]
+  depends_on: *lab-deps
+  restart: unless-stopped
+  healthcheck:
+    # Agent card for A2A servers; HEALTH_PATH overrides for MCP/registry services
+    test: ["CMD", "python", "-c", "import os,urllib.request;urllib.request.urlopen('http://localhost:'+os.environ['PORT']+os.environ.get('HEALTH_PATH','/.well-known/agent-card.json'),timeout=3)"]
+    interval: 10s
+    timeout: 5s
+    retries: 18
+    start_period: 20s
+
+services:
+  # ───────────────────────── Infrastructure (always on) ─────────────────────────
+  lgtm:
+    image: grafana/otel-lgtm:${LGTM_VERSION:-latest}
+    ports: ["3000:3000", "4317:4317", "4318:4318", "3200:3200", "3100:3100", "9090:9090"]   # UI, OTLP, Tempo, Loki, Prometheus APIs
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./observability/grafana/dashboards:/otel-lgtm/a2a-dashboards:ro
+      - ./observability/grafana/provisioning/dashboards.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/a2a.yaml:ro  # [VERIFY path]
+      - lgtm-data:/data
+
+  models-check:
+    image: a2a-labs:dev
+    build: {context: ., dockerfile: docker/Dockerfile}
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    env_file: [{path: .env, required: false}]
+    environment:
+      <<: *lab-env
+    command: ["python", "scripts/check_models.py", "--require-all"]
+    restart: "no"
+
+  jupyter:
+    build: {context: ., dockerfile: docker/jupyter.Dockerfile}
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    env_file: [{path: .env, required: false}]
+    environment:
+      <<: *lab-env
+      OTEL_SERVICE_NAME: notebook
+    ports: ["8888:8888", "9200:9200"]   # 9200 = embedded push receiver (Lab 08)
+    volumes: [".:/app"]
+    depends_on:
+      lgtm: {condition: service_started}
+
+  # ───────────────────────── Optional: Ollama in a container ─────────────────────────
+  ollama:
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}   # >= 0.40.4 required for nimble-v3
+    profiles: [ollama]
+    ports: ["11434:11434"]
+    volumes: ["ollama-models:/root/.ollama"]
+    healthcheck: {test: ["CMD", "ollama", "list"], interval: 10s, retries: 30}
+    # Uncomment for NVIDIA GPUs:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices: [{driver: nvidia, count: all, capabilities: [gpu]}]
+
+  ollama-pull:
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
+    profiles: [ollama]
+    depends_on: {ollama: {condition: service_healthy}}
+    environment: {OLLAMA_HOST: "http://ollama:11434"}
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ollama pull ${REASONING_MODEL:-qwen3.8:27b} && ollama pull ${QUICK_MODEL:-llama3.2:latest} && ollama pull ${DECISION_MODEL:-nimble-v3:latest}"]
+    restart: "no"
+
+  # ───────────────────────── Shared services ─────────────────────────
+  webhook-receiver:
+    <<: *lab-service
+    profiles: [lab00, lab08, lab10, all]
+    command: ["python", "-m", "a2a_labs_webhook.app"]
+    environment:
+      <<: *lab-env
+      OTEL_SERVICE_NAME: webhook-receiver
+      PORT: "9100"
+      HEALTH_PATH: /healthz
+      WEBHOOK_REQUIRE_AUTH: ${WEBHOOK_REQUIRE_AUTH:-false}
+    ports: ["9100:9100"]
+
+  lab10-mock-idp:
+    image: ghcr.io/navikt/mock-oauth2-server:${MOCK_IDP_VERSION:-2.1.10}   # [VERIFY tag + device-code support]
+    profiles: [lab10, all]
+    environment:
+      SERVER_PORT: "11009"
+      JSON_CONFIG_PATH: /config/mock-idp.json
+    volumes: ["./config/lab10/mock-idp.json:/config/mock-idp.json:ro"]
+    ports: ["11009:11009"]
+
+  lab04-langgraph-agent-server:
+    <<: *lab-service
+    profiles: [lab04-agentserver]
+    working_dir: /app/labs/lab04-langgraph-node
+    command: ["langgraph", "dev", "--host", "0.0.0.0", "--port", "10403", "--no-browser"]   # [VERIFY flags]
+    environment:
+      <<: *lab-env
+      OTEL_SERVICE_NAME: lab04-langgraph-agent-server
+      PORT: "10403"
+      HEALTH_PATH: /ok
+    ports: ["10403:10403"]
+
+  # ───────────────────────── Tools ─────────────────────────
+  a2a-inspector:
+    build: {context: "https://github.com/a2aproject/a2a-inspector.git"}   # [VERIFY Dockerfile presence/port]
+    profiles: [tools]
+    ports: ["5001:8080"]
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:${OTELCOL_VERSION:-latest}
+    profiles: [collector]
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes: ["./observability/collector/otelcol-config.yaml:/etc/otelcol/config.yaml:ro"]
+    ports: ["14317:4317", "14318:4318"]
+
+  # ───────────────────────── Lab services ─────────────────────────
+  lab00-protocol-agent:
+    <<: *lab-service
+    profiles: [lab00, all]
+    command: [python, -m, lab00_protocol.servers.playground]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab00"
+      OTEL_SERVICE_NAME: "lab00-protocol-agent"
+      PORT: "10001"
+      PLAYGROUND_VARIANT: "full"
+    ports: ['10001:10001', '10002:10002']
+    depends_on:
+      <<: *lab-deps
+      webhook-receiver: {condition: service_healthy}
+  lab00-protocol-agent-nostream:
+    <<: *lab-service
+    profiles: [lab00, all]
+    command: [python, -m, lab00_protocol.servers.playground]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab00"
+      OTEL_SERVICE_NAME: "lab00-protocol-agent-nostream"
+      PORT: "10003"
+      PLAYGROUND_VARIANT: "nostream"
+    ports: ['10003:10003']
+  lab00-protocol-agent-nopush:
+    <<: *lab-service
+    profiles: [lab00, all]
+    command: [python, -m, lab00_protocol.servers.playground]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab00"
+      OTEL_SERVICE_NAME: "lab00-protocol-agent-nopush"
+      PORT: "10004"
+      PLAYGROUND_VARIANT: "nopush"
+    ports: ['10004:10004']
+  lab01-sdk-echo:
+    <<: *lab-service
+    profiles: [lab01, all]
+    command: [python, -m, lab01_direct.servers.sdk_echo]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab01"
+      OTEL_SERVICE_NAME: "lab01-sdk-echo"
+      PORT: "10101"
+    ports: ['10101:10101']
+  lab01-adk-agent:
+    <<: *lab-service
+    profiles: [lab01, all]
+    command: [python, -m, lab01_direct.servers.adk_agent]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab01"
+      OTEL_SERVICE_NAME: "lab01-adk-agent"
+      PORT: "10102"
+    ports: ['10102:10102']
+  lab01-strands-agent:
+    <<: *lab-service
+    profiles: [lab01, all]
+    command: [python, -m, lab01_direct.servers.strands_agent]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab01"
+      OTEL_SERVICE_NAME: "lab01-strands-agent"
+      PORT: "10103"
+    ports: ['10103:10103']
+  lab01-langgraph-agent:
+    <<: *lab-service
+    profiles: [lab01, all]
+    command: [python, -m, lab01_direct.servers.langgraph_agent]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab01"
+      OTEL_SERVICE_NAME: "lab01-langgraph-agent"
+      PORT: "10104"
+    ports: ['10104:10104']
+  lab02-langgraph-currency:
+    <<: *lab-service
+    profiles: [lab02, all]
+    command: [python, -m, lab02_tool.servers.langgraph_currency]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab02"
+      OTEL_SERVICE_NAME: "lab02-langgraph-currency"
+      PORT: "10201"
+    ports: ['10201:10201']
+  lab02-strands-weather:
+    <<: *lab-service
+    profiles: [lab02, all]
+    command: [python, -m, lab02_tool.servers.strands_weather]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab02"
+      OTEL_SERVICE_NAME: "lab02-strands-weather"
+      PORT: "10202"
+    ports: ['10202:10202']
+  lab02-adk-facts:
+    <<: *lab-service
+    profiles: [lab02, all]
+    command: [python, -m, lab02_tool.servers.adk_facts]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab02"
+      OTEL_SERVICE_NAME: "lab02-adk-facts"
+      PORT: "10203"
+    ports: ['10203:10203']
+  lab02-adk-controller:
+    <<: *lab-service
+    profiles: [lab02, all]
+    command: [python, -m, lab02_tool.servers.adk_controller]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab02"
+      OTEL_SERVICE_NAME: "lab02-adk-controller"
+      PORT: "10204"
+    ports: ['10204:10204']
+    depends_on:
+      <<: *lab-deps
+      lab02-langgraph-currency: {condition: service_healthy}
+      lab02-strands-weather: {condition: service_healthy}
+      lab02-adk-facts: {condition: service_healthy}
+  lab02-strands-controller:
+    <<: *lab-service
+    profiles: [lab02, all]
+    command: [python, -m, lab02_tool.servers.strands_controller]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab02"
+      OTEL_SERVICE_NAME: "lab02-strands-controller"
+      PORT: "10205"
+    ports: ['10205:10205']
+    depends_on:
+      <<: *lab-deps
+      lab02-langgraph-currency: {condition: service_healthy}
+      lab02-strands-weather: {condition: service_healthy}
+      lab02-adk-facts: {condition: service_healthy}
+  lab02-langchain-controller:
+    <<: *lab-service
+    profiles: [lab02, all]
+    command: [python, -m, lab02_tool.servers.langchain_controller]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab02"
+      OTEL_SERVICE_NAME: "lab02-langchain-controller"
+      PORT: "10206"
+    ports: ['10206:10206']
+    depends_on:
+      <<: *lab-deps
+      lab02-langgraph-currency: {condition: service_healthy}
+      lab02-strands-weather: {condition: service_healthy}
+      lab02-adk-facts: {condition: service_healthy}
+  lab03-tools-mcp:
+    <<: *lab-service
+    profiles: [lab03, all]
+    command: [python, -m, lab03_mcp.servers.tools_mcp]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab03"
+      OTEL_SERVICE_NAME: "lab03-tools-mcp"
+      PORT: "10301"
+      HEALTH_PATH: "/healthz"
+    ports: ['10301:10301']
+  lab03-strands-specialist:
+    <<: *lab-service
+    profiles: [lab03, all]
+    command: [python, -m, lab03_mcp.servers.strands_specialist]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab03"
+      OTEL_SERVICE_NAME: "lab03-strands-specialist"
+      PORT: "10302"
+    ports: ['10302:10302']
+    depends_on:
+      <<: *lab-deps
+      lab03-tools-mcp: {condition: service_healthy}
+  lab03-adk-specialist:
+    <<: *lab-service
+    profiles: [lab03, all]
+    command: [python, -m, lab03_mcp.servers.adk_specialist]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab03"
+      OTEL_SERVICE_NAME: "lab03-adk-specialist"
+      PORT: "10303"
+    ports: ['10303:10303']
+    depends_on:
+      <<: *lab-deps
+      lab03-tools-mcp: {condition: service_healthy}
+  lab03-mcp-a2a-bridge:
+    <<: *lab-service
+    profiles: [lab03, all]
+    command: [python, -m, lab03_mcp.servers.mcp_a2a_bridge]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab03"
+      OTEL_SERVICE_NAME: "lab03-mcp-a2a-bridge"
+      PORT: "10304"
+      HEALTH_PATH: "/healthz"
+      BRIDGE_AGENTS: "lab03-strands-specialist,lab03-adk-specialist"
+    ports: ['10304:10304']
+    depends_on:
+      <<: *lab-deps
+      lab03-strands-specialist: {condition: service_healthy}
+      lab03-adk-specialist: {condition: service_healthy}
+  lab03-langgraph-mcp-consumer:
+    <<: *lab-service
+    profiles: [lab03, all]
+    command: [python, -m, lab03_mcp.servers.langgraph_mcp_consumer]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab03"
+      OTEL_SERVICE_NAME: "lab03-langgraph-mcp-consumer"
+      PORT: "10305"
+    ports: ['10305:10305']
+    depends_on:
+      <<: *lab-deps
+      lab03-mcp-a2a-bridge: {condition: service_healthy}
+  lab03-adk-mcp-consumer:
+    <<: *lab-service
+    profiles: [lab03, all]
+    command: [python, -m, lab03_mcp.servers.adk_mcp_consumer]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab03"
+      OTEL_SERVICE_NAME: "lab03-adk-mcp-consumer"
+      PORT: "10306"
+    ports: ['10306:10306']
+    depends_on:
+      <<: *lab-deps
+      lab03-mcp-a2a-bridge: {condition: service_healthy}
+  lab04-langgraph-travel:
+    <<: *lab-service
+    profiles: [lab04, all]
+    command: [python, -m, lab04_langgraph.servers.trip_planner]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab04"
+      OTEL_SERVICE_NAME: "lab04-langgraph-travel"
+      PORT: "10401"
+    ports: ['10401:10401']
+  lab04-langgraph-orchestrator:
+    <<: *lab-service
+    profiles: [lab04, all]
+    command: [python, -m, lab04_langgraph.servers.concierge]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab04"
+      OTEL_SERVICE_NAME: "lab04-langgraph-orchestrator"
+      PORT: "10402"
+    ports: ['10402:10402']
+    depends_on:
+      <<: *lab-deps
+      lab04-langgraph-travel: {condition: service_healthy}
+  lab05-currency:
+    <<: *lab-service
+    profiles: [lab05, all]
+    command: [python, -m, lab02_tool.servers.langgraph_currency]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab05"
+      OTEL_SERVICE_NAME: "lab05-currency"
+      PORT: "10502"
+    ports: ['10502:10502']
+  lab05-weather:
+    <<: *lab-service
+    profiles: [lab05, all]
+    command: [python, -m, lab02_tool.servers.strands_weather]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab05"
+      OTEL_SERVICE_NAME: "lab05-weather"
+      PORT: "10503"
+    ports: ['10503:10503']
+  lab05-facts:
+    <<: *lab-service
+    profiles: [lab05, all]
+    command: [python, -m, lab02_tool.servers.adk_facts]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab05"
+      OTEL_SERVICE_NAME: "lab05-facts"
+      PORT: "10504"
+    ports: ['10504:10504']
+  lab05-supervisor:
+    <<: *lab-service
+    profiles: [lab05, all]
+    command: [python, -m, lab05_supervisor.servers.langgraph_supervisor]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab05"
+      OTEL_SERVICE_NAME: "lab05-supervisor"
+      PORT: "10501"
+    ports: ['10501:10501']
+    depends_on:
+      <<: *lab-deps
+      lab05-currency: {condition: service_healthy}
+      lab05-weather: {condition: service_healthy}
+      lab05-facts: {condition: service_healthy}
+  lab05-adk-coordinator:
+    <<: *lab-service
+    profiles: [lab05, all]
+    command: [python, -m, lab05_supervisor.servers.adk_coordinator]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab05"
+      OTEL_SERVICE_NAME: "lab05-adk-coordinator"
+      PORT: "10505"
+    ports: ['10505:10505']
+    depends_on:
+      <<: *lab-deps
+      lab05-currency: {condition: service_healthy}
+      lab05-weather: {condition: service_healthy}
+      lab05-facts: {condition: service_healthy}
+  lab05-strands-graph-supervisor:
+    <<: *lab-service
+    profiles: [lab05, all]
+    command: [python, -m, lab05_supervisor.servers.strands_graph]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab05"
+      OTEL_SERVICE_NAME: "lab05-strands-graph-supervisor"
+      PORT: "10506"
+    ports: ['10506:10506']
+    depends_on:
+      <<: *lab-deps
+      lab05-currency: {condition: service_healthy}
+      lab05-weather: {condition: service_healthy}
+      lab05-facts: {condition: service_healthy}
+  lab06-agent-a:
+    <<: *lab-service
+    profiles: [lab06, all]
+    command: [python, -m, lab06_registry.servers.agent_a]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab06"
+      OTEL_SERVICE_NAME: "lab06-agent-a"
+      PORT: "10602"
+    ports: ['10602:10602']
+  lab06-agent-b:
+    <<: *lab-service
+    profiles: [lab06, all]
+    command: [python, -m, lab06_registry.servers.agent_b]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab06"
+      OTEL_SERVICE_NAME: "lab06-agent-b"
+      PORT: "10603"
+    ports: ['10603:10603']
+  lab06-agent-rogue:
+    <<: *lab-service
+    profiles: [lab06, all]
+    command: [python, -m, lab06_registry.servers.agent_rogue]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab06"
+      OTEL_SERVICE_NAME: "lab06-agent-rogue"
+      PORT: "10604"
+      ROGUE_MODE: "name_spoof"
+    ports: ['10604:10604']
+  lab06-registry:
+    <<: *lab-service
+    profiles: [lab06, all]
+    command: [python, -m, lab06_registry.servers.registry]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab06"
+      OTEL_SERVICE_NAME: "lab06-registry"
+      PORT: "10601"
+      HEALTH_PATH: "/healthz"
+    ports: ['10601:10601']
+    depends_on:
+      <<: *lab-deps
+      lab06-agent-a: {condition: service_healthy}
+      lab06-agent-b: {condition: service_healthy}
+      lab06-agent-rogue: {condition: service_healthy}
+  lab06-delegator:
+    <<: *lab-service
+    profiles: [lab06, all]
+    command: [python, -m, lab06_registry.servers.delegator]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab06"
+      OTEL_SERVICE_NAME: "lab06-delegator"
+      PORT: "10605"
+    ports: ['10605:10605']
+    depends_on:
+      <<: *lab-deps
+      lab06-registry: {condition: service_healthy}
+  lab07-adk-planner:
+    <<: *lab-service
+    profiles: [lab07, all]
+    command: [python, -m, lab07_chain.servers.adk_planner]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab07"
+      OTEL_SERVICE_NAME: "lab07-adk-planner"
+      PORT: "10701"
+    ports: ['10701:10701']
+  lab07-strands-writer:
+    <<: *lab-service
+    profiles: [lab07, all]
+    command: [python, -m, lab07_chain.servers.strands_writer]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab07"
+      OTEL_SERVICE_NAME: "lab07-strands-writer"
+      PORT: "10702"
+    ports: ['10702:10702']
+  lab07-langgraph-editor:
+    <<: *lab-service
+    profiles: [lab07, all]
+    command: [python, -m, lab07_chain.servers.langgraph_editor]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab07"
+      OTEL_SERVICE_NAME: "lab07-langgraph-editor"
+      PORT: "10703"
+    ports: ['10703:10703']
+  lab07-chain-orchestrator:
+    <<: *lab-service
+    profiles: [lab07, all]
+    command: [python, -m, lab07_chain.servers.orchestrator]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab07"
+      OTEL_SERVICE_NAME: "lab07-chain-orchestrator"
+      PORT: "10704"
+    ports: ['10704:10704']
+    depends_on:
+      <<: *lab-deps
+      lab07-adk-planner: {condition: service_healthy}
+      lab07-strands-writer: {condition: service_healthy}
+      lab07-langgraph-editor: {condition: service_healthy}
+  lab08-sdk-report-agent:
+    <<: *lab-service
+    profiles: [lab08, all]
+    command: [python, -m, lab08_push.servers.sdk_report_agent]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab08"
+      OTEL_SERVICE_NAME: "lab08-sdk-report-agent"
+      PORT: "10801"
+    ports: ['10801:10801']
+    depends_on:
+      <<: *lab-deps
+      webhook-receiver: {condition: service_healthy}
+  lab08-strands-batch-agent:
+    <<: *lab-service
+    profiles: [lab08, all]
+    command: [python, -m, lab08_push.servers.strands_batch_agent]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab08"
+      OTEL_SERVICE_NAME: "lab08-strands-batch-agent"
+      PORT: "10802"
+    ports: ['10802:10802']
+    depends_on:
+      <<: *lab-deps
+      webhook-receiver: {condition: service_healthy}
+  lab08-adk-research-agent:
+    <<: *lab-service
+    profiles: [lab08, all]
+    command: [python, -m, lab08_push.servers.adk_research_agent]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab08"
+      OTEL_SERVICE_NAME: "lab08-adk-research-agent"
+      PORT: "10803"
+    ports: ['10803:10803']
+    depends_on:
+      <<: *lab-deps
+      webhook-receiver: {condition: service_healthy}
+  lab08-langgraph-pipeline-agent:
+    <<: *lab-service
+    profiles: [lab08, all]
+    command: [python, -m, lab08_push.servers.langgraph_pipeline_agent]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab08"
+      OTEL_SERVICE_NAME: "lab08-langgraph-pipeline-agent"
+      PORT: "10804"
+    ports: ['10804:10804']
+    depends_on:
+      <<: *lab-deps
+      webhook-receiver: {condition: service_healthy}
+  lab09-squad-payments:
+    <<: *lab-service
+    profiles: [lab09, all]
+    command: [python, -m, lab09_agp.servers.squad_payments]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab09"
+      OTEL_SERVICE_NAME: "lab09-squad-payments"
+      PORT: "10911"
+      AGP_PARENT: "lab09-finance-gateway"
+    ports: ['10911:10911']
+    depends_on:
+      <<: *lab-deps
+      lab09-finance-gateway: {condition: service_healthy}
+  lab09-squad-fx:
+    <<: *lab-service
+    profiles: [lab09, all]
+    command: [python, -m, lab09_agp.servers.squad_fx]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab09"
+      OTEL_SERVICE_NAME: "lab09-squad-fx"
+      PORT: "10912"
+      AGP_PARENT: "lab09-finance-gateway"
+    ports: ['10912:10912']
+    depends_on:
+      <<: *lab-deps
+      lab09-finance-gateway: {condition: service_healthy}
+  lab09-squad-compliance:
+    <<: *lab-service
+    profiles: [lab09, all]
+    command: [python, -m, lab09_agp.servers.squad_compliance]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab09"
+      OTEL_SERVICE_NAME: "lab09-squad-compliance"
+      PORT: "10913"
+      AGP_PARENT: "lab09-finance-gateway"
+    ports: ['10913:10913']
+    depends_on:
+      <<: *lab-deps
+      lab09-finance-gateway: {condition: service_healthy}
+  lab09-squad-flights:
+    <<: *lab-service
+    profiles: [lab09, all]
+    command: [python, -m, lab09_agp.servers.squad_flights]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab09"
+      OTEL_SERVICE_NAME: "lab09-squad-flights"
+      PORT: "10914"
+      AGP_PARENT: "lab09-travel-gateway"
+    ports: ['10914:10914']
+    depends_on:
+      <<: *lab-deps
+      lab09-travel-gateway: {condition: service_healthy}
+  lab09-squad-hotels:
+    <<: *lab-service
+    profiles: [lab09, all]
+    command: [python, -m, lab09_agp.servers.squad_hotels]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab09"
+      OTEL_SERVICE_NAME: "lab09-squad-hotels"
+      PORT: "10915"
+      AGP_PARENT: "lab09-travel-gateway"
+    ports: ['10915:10915']
+    depends_on:
+      <<: *lab-deps
+      lab09-travel-gateway: {condition: service_healthy}
+  lab09-squad-visa:
+    <<: *lab-service
+    profiles: [lab09, all]
+    command: [python, -m, lab09_agp.servers.squad_visa]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab09"
+      OTEL_SERVICE_NAME: "lab09-squad-visa"
+      PORT: "10916"
+      AGP_PARENT: "lab09-travel-gateway"
+    ports: ['10916:10916']
+    depends_on:
+      <<: *lab-deps
+      lab09-travel-gateway: {condition: service_healthy}
+  lab09-root-gateway:
+    <<: *lab-service
+    profiles: [lab09, all]
+    command: [python, -m, lab09_agp.servers.gateway]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab09"
+      OTEL_SERVICE_NAME: "lab09-root-gateway"
+      PORT: "10901"
+      AGP_ROLE: "root"
+    ports: ['10901:10901']
+  lab09-finance-gateway:
+    <<: *lab-service
+    profiles: [lab09, all]
+    command: [python, -m, lab09_agp.servers.gateway]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab09"
+      OTEL_SERVICE_NAME: "lab09-finance-gateway"
+      PORT: "10902"
+      AGP_ROLE: "domain"
+      AGP_DOMAIN: "finance"
+      AGP_PARENT: "lab09-root-gateway"
+    ports: ['10902:10902']
+    depends_on:
+      <<: *lab-deps
+      lab09-root-gateway: {condition: service_healthy}
+  lab09-travel-gateway:
+    <<: *lab-service
+    profiles: [lab09, all]
+    command: [python, -m, lab09_agp.servers.gateway]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab09"
+      OTEL_SERVICE_NAME: "lab09-travel-gateway"
+      PORT: "10903"
+      AGP_ROLE: "domain"
+      AGP_DOMAIN: "travel"
+      AGP_PARENT: "lab09-root-gateway"
+    ports: ['10903:10903']
+    depends_on:
+      <<: *lab-deps
+      lab09-root-gateway: {condition: service_healthy}
+  lab10-secure-agent:
+    <<: *lab-service
+    profiles: [lab10, all]
+    command: [python, -m, lab10_secure.servers.secure_agent]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab10"
+      OTEL_SERVICE_NAME: "lab10-secure-agent"
+      PORT: "11001"
+    ports: ['11001:11001']
+    depends_on:
+      <<: *lab-deps
+      lab10-mock-idp: {condition: service_healthy}
+  lab10-ext-agent:
+    <<: *lab-service
+    profiles: [lab10, all]
+    command: [python, -m, lab10_secure.servers.ext_agent]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab10"
+      OTEL_SERVICE_NAME: "lab10-ext-agent"
+      PORT: "11002"
+    ports: ['11002:11002']
+  lab10-required-ext-agent:
+    <<: *lab-service
+    profiles: [lab10, all]
+    command: [python, -m, lab10_secure.servers.required_ext_agent]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab10"
+      OTEL_SERVICE_NAME: "lab10-required-ext-agent"
+      PORT: "11003"
+    ports: ['11003:11003']
+  lab10-adk-secure:
+    <<: *lab-service
+    profiles: [lab10, all]
+    command: [python, -m, lab10_secure.servers.adk_secure]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab10"
+      OTEL_SERVICE_NAME: "lab10-adk-secure"
+      PORT: "11004"
+    ports: ['11004:11004']
+    depends_on:
+      <<: *lab-deps
+      lab10-mock-idp: {condition: service_healthy}
+  lab10-strands-secure:
+    <<: *lab-service
+    profiles: [lab10, all]
+    command: [python, -m, lab10_secure.servers.strands_secure]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab10"
+      OTEL_SERVICE_NAME: "lab10-strands-secure"
+      PORT: "11005"
+    ports: ['11005:11005']
+    depends_on:
+      <<: *lab-deps
+      lab10-mock-idp: {condition: service_healthy}
+
+volumes:
+  lgtm-data: {}
+  ollama-models: {}

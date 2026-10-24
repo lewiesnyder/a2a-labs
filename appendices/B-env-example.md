@@ -1,0 +1,97 @@
+# Appendix B: `.env.example`
+
+Copy this verbatim to the repo root as `.env.example`. `.env` is git-ignored.
+
+```dotenv
+# ───────────── Runtime ─────────────
+A2A_LABS_ENV=lab
+# host | docker (containers set docker automatically)
+A2A_LABS_RUNTIME=host
+A2A_LABS_A2A_VERSION=1.0
+A2A_LABS_V03_COMPAT=true
+LOG_LEVEL=INFO
+
+# ───────────── Ollama ─────────────
+# host = use your local Ollama (default); container = run `--profile ollama`
+OLLAMA_MODE=host
+# From containers in host mode: http://host.docker.internal:11434 ; container mode: http://ollama:11434
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+# LiteLLM (ADK) reads this
+OLLAMA_API_BASE=${OLLAMA_BASE_URL}
+# Container image tag. Must be >= 0.40.4 for nimble-v3.
+OLLAMA_VERSION=latest
+
+# ───────────── Model roles ─────────────
+# providers: ollama | openai | anthropic | gemini | bedrock | openai_compatible | fake
+REASONING_PROVIDER=ollama
+REASONING_MODEL=qwen3.8:27b
+REASONING_THINK=true
+REASONING_EFFORT=medium
+
+QUICK_PROVIDER=ollama
+QUICK_MODEL=llama3.2:latest
+
+# decision providers: ollama_systemone | llm_fallback | fake
+DECISION_PROVIDER=ollama_systemone
+DECISION_MODEL=nimble-v3:latest
+DECISION_FALLBACK_ON_ERROR=true
+
+# Global override for tests: fake
+# LLM_PROVIDER=fake
+
+# ───────────── Other providers (optional) ─────────────
+OPENAI_API_KEY=
+OPENAI_BASE_URL=
+ANTHROPIC_API_KEY=
+GOOGLE_API_KEY=
+AWS_REGION=us-east-1
+OPENAI_COMPAT_BASE_URL=
+OPENAI_COMPAT_API_KEY=
+
+# ───────────── Model checks ─────────────
+SKIP_MODEL_CHECK=false
+
+# ───────────── OpenTelemetry ─────────────
+A2A_LABS_OTEL_ENABLED=true
+# Containers override this to http://lgtm:4317
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+OTEL_METRICS_EXPORTER=otlp
+OTEL_LOGS_EXPORTER=otlp
+OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental
+# Lab environment only: capture prompt/response content on GenAI spans
+OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true
+ADK_SUPPRESS_A2A_EXPERIMENTAL_FEATURE_WARNINGS=true
+
+# ───────────── Jupyter ─────────────
+JUPYTER_TOKEN=a2a-labs
+
+# ───────────── Lab 00 ─────────────
+PLAYGROUND_STEP_DELAY=0.5
+PLAYGROUND_AUTH_TOKEN=letmein
+PLAYGROUND_ADMIN_TOKEN=lab00-admin
+
+# ───────────── Lab 05 ─────────────
+# nimble | llm
+ROUTER_MODE=nimble
+
+# ───────────── Lab 07 ─────────────
+CHAIN_MAX_LOOPS=2
+
+# ───────────── Lab 08 ─────────────
+PHASE_SECONDS=5
+PUSH_ALLOWED_HOSTS=webhook-receiver,jupyter,host.docker.internal
+WEBHOOK_REQUIRE_AUTH=true
+
+# ───────────── Lab 09 ─────────────
+AGP_TTL_S=20
+AGP_REANNOUNCE_S=8
+
+# ───────────── Lab 10 ─────────────
+LAB10_API_KEY=lab10-key
+LAB10_OAUTH_CLIENT_ID=notebook-client
+LAB10_OAUTH_CLIENT_SECRET=notebook-secret
+LAB10_IDP_ISSUER=http://lab10-mock-idp:11009/default
+```
+
+Note: dotenv files do not reliably expand `${VAR}`. In the compose file, set `OLLAMA_API_BASE` from `OLLAMA_BASE_URL` with YAML anchors, as shown in 06 §2. `settings.py` handles the expansion for local runs.

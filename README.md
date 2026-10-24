@@ -1,0 +1,66 @@
+# A2A Labs: Specification Package
+
+**Version:** 1.0.0 (spec), October 2026
+**Audience:** coding agents and engineers who will build the `a2a-labs` monorepo
+**Status:** Ready to build
+
+This package specifies a Python monorepo of hands-on labs for the **Agent2Agent (A2A) protocol**. The labs use **Google ADK**, **AWS Strands Agents** and **LangChain/LangGraph**. Every LLM runs locally in **Ollama**, every service is wired into **OpenTelemetry**, and one `docker compose` file starts any lab through **profiles**. Each lab has a Jupyter notebook that walks through it.
+
+## How to read this package
+
+Read the files in order. The numbered docs are normative: a coding agent MUST follow them. The `labs/` docs specify each lab package. The `appendices/` hold copy-ready templates.
+
+| File | Purpose |
+|---|---|
+| [`AGENTS.md`](AGENTS.md) | **Start here if you are a coding agent.** Rules of engagement, verification gates, definition of done. |
+| [`00-overview.md`](00-overview.md) | Goals, scope, design principles, glossary, key decisions |
+| [`01-protocol-reference.md`](01-protocol-reference.md) | A2A v1.0 reference for the labs: methods, legacy crosswalk, data model, states, errors, transports, versioning |
+| [`02-repository-structure.md`](02-repository-structure.md) | Monorepo layout, uv workspace, package naming, code conventions |
+| [`03-common-library.md`](03-common-library.md) | `a2a-labs-common`: config, A2A helpers, server builder, client helpers, display utilities |
+| [`04-model-providers.md`](04-model-providers.md) | Provider-agnostic chat and decision models: Ollama defaults, swapping providers, Nimble decision model |
+| [`05-observability.md`](05-observability.md) | OpenTelemetry traces, logs and metrics, context propagation, GenAI semantic conventions, dashboards |
+| [`06-docker-compose.md`](06-docker-compose.md) | Single compose file, profiles, port map, images, Ollama on host vs in container |
+| [`07-notebook-standards.md`](07-notebook-standards.md) | How every lab notebook is structured and written |
+| [`08-testing-and-conformance.md`](08-testing-and-conformance.md) | Unit, integration and notebook tests, A2A TCK, A2A Inspector, CI |
+| [`09-build-plan.md`](09-build-plan.md) | Phased build order, milestones and acceptance criteria |
+| [`10-pitfalls-and-corrections.md`](10-pitfalls-and-corrections.md) | Known defects, version traps, corrections to earlier research |
+| [`labs/`](labs/) | One spec per lab (00–10) plus [`shared-webhook-receiver.md`](labs/shared-webhook-receiver.md) |
+| [`appendices/A-coverage-matrix.md`](appendices/A-coverage-matrix.md) | Operations × labs, states, patterns × frameworks, features, with CI coverage tags |
+| [`appendices/B-env-example.md`](appendices/B-env-example.md) | Every environment variable with defaults |
+| [`appendices/C-compose-and-endpoints.md`](appendices/C-compose-and-endpoints.md) | Ready-to-use `compose.yaml` (validated), `endpoints.yaml`, `models.yaml`, `.env.example` in `appendices/files/` |
+| [`appendices/D-pyproject-templates.md`](appendices/D-pyproject-templates.md) | Workspace, common lib, lab and service `pyproject.toml` templates |
+| [`appendices/E-sources.md`](appendices/E-sources.md) | Official references used, for resolving [VERIFY] items |
+| [`appendices/F-notebook-template.md`](appendices/F-notebook-template.md) | Jupytext notebook template following the standards |
+
+## Conventions in this spec
+
+- **MUST / SHOULD / MAY** follow RFC 2119.
+- **[VERIFY]** marks an API detail that the research could not confirm with certainty. Resolve it against the installed package before coding (see `AGENTS.md` §3).
+- **`# CUSTOM`** marks the few places where no official A2A or framework construct exists and the labs add thin custom code.
+- Method names use **A2A v1.0** (`SendMessage`), with v0.3 (`message/send`) and legacy (`tasks/send`) names given in the crosswalk (`01-protocol-reference.md` §2).
+
+## The labs at a glance
+
+| Lab | Package | Pattern | Frameworks |
+|---|---|---|---|
+| 00 | `lab00-protocol-fundamentals` | All A2A operations (the 7 requested legacy methods plus 4 more in v1.0), transports, Parts, errors | a2a-sdk (pure) |
+| 01 | `lab01-direct-client` | **#1 Direct client → agent**: Message vs Task | ADK, Strands, LangGraph, a2a-sdk |
+| 02 | `lab02-agent-as-tool` | **#2 Agent as tool** | ADK, Strands, LangChain |
+| 03 | `lab03-mcp-delegation` | **#2b Delegation via MCP** (A2A behind MCP tools) | ADK, Strands, LangChain + MCP |
+| 04 | `lab04-langgraph-node` | **#3 LangGraph framework node**: graph states ↔ task states | LangGraph (+ optional Agent Server) |
+| 05 | `lab05-supervisor-router` | **#4 Supervisor/router**: per-remote task and context tracking, Nimble routing | LangGraph supervisor, ADK, Strands |
+| 06 | `lab06-registry-discovery` | **#5 Registry and discovery**: well-known cards, curated registry, signed cards | a2a-sdk, all three frameworks |
+| 07 | `lab07-sequential-chain` | **#6 Sequential chaining / multi-hop**: planner → writer → editor | ADK → Strands → LangGraph |
+| 08 | `lab08-async-push` | **#7 Async queue and push**: webhooks, JWT/JWKS, resubscribe | a2a-sdk, Strands, ADK, LangGraph |
+| 09 | `lab09-agp-squads` | **#8 AGP hierarchical squads** (experimental extension) | a2a-sdk, mixed squads |
+| 10 | `lab10-security-extensions` | Auth schemes, extended card, AUTH_REQUIRED, extensions, version negotiation | a2a-sdk, ADK, Strands |
+
+## Model defaults (configurable)
+
+| Role | Default (Ollama) | Used for |
+|---|---|---|
+| `reasoning` | `qwen3.8:27b` | Planning, writing, supervision, multi-step tool use |
+| `quick` | `llama3.2:latest` | Simple specialists, summaries, fast tool calls |
+| `decision` ("system one") | `nimble-v3:latest` | Routing, gating, scoring via Ollama `/v1/systemone`. **Not a chat model.** |
+
+Any role can be pointed at another provider (OpenAI, Anthropic, Gemini, Bedrock, vLLM, LM Studio and others). See `04-model-providers.md`.
