@@ -1,0 +1,31 @@
+[project]
+name = "lab04-langgraph-node"
+version = "0.1.0"
+description = "Lab 04 — LangGraph as a framework node (A2A pattern 3): graphs served over A2A and remote A2A nodes."
+requires-python = ">=3.12,<3.13"
+dependencies = ["a2a-labs-common[langchain]"]
+
+# Optional sub-lab (profile lab04-agentserver): the LangGraph Agent Server's built-in A2A endpoint.
+# A dependency GROUP, not an extra, so `uv sync --all-extras` does not drag it into every image;
+# install with `uv sync --group agentserver` (DEV-30: langgraph-api 0.18+ is still pre-release).
+[dependency-groups]
+agentserver = ["langgraph-cli[inmem]", "langgraph-api>=0.4.21"]
+
+[project.scripts]
+lab04-trip-planner = "lab04_langgraph.servers.trip_planner:main"
+lab04-concierge = "lab04_langgraph.servers.concierge:main"
+
+[tool.uv.sources]
+a2a-labs-common = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lab04_langgraph"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "--import-mode=importlib"  # several labs share test module names
+markers = ["compose: needs running compose profile", "llm: needs a real model", "slow: long"]

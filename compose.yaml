@@ -120,9 +120,11 @@ services:
 
   lab04-langgraph-agent-server:
     <<: *lab-service
+    image: a2a-labs:agentserver
+    build: {context: ., dockerfile: docker/agentserver.Dockerfile}
     profiles: [lab04-agentserver]
     working_dir: /app/labs/lab04-langgraph-node
-    command: ["langgraph", "dev", "--host", "0.0.0.0", "--port", "10403", "--no-browser"]   # [VERIFY flags]
+    command: ["langgraph", "dev", "--host", "0.0.0.0", "--port", "10403", "--no-browser", "--no-reload"]
     environment:
       <<: *lab-env
       OTEL_SERVICE_NAME: lab04-langgraph-agent-server
@@ -383,6 +385,7 @@ services:
       A2A_LABS_LAB_ID: "lab04"
       OTEL_SERVICE_NAME: "lab04-langgraph-travel"
       PORT: "10401"
+      TRIP_STEP_DELAY: ${TRIP_STEP_DELAY:-0.8}  # slow suppliers: visible progress, room to cancel
     ports: ['10401:10401']
   lab04-langgraph-orchestrator:
     <<: *lab-service

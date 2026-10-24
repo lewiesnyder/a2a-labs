@@ -51,6 +51,11 @@ class DecisionResult(BaseModel):
 
 def parse_answer(qtype: Literal["choice", "noul", "score"], payload: dict[str, Any]) -> Answer:
     """Tolerant: read known keys, keep everything in ``raw`` (the shape is not fully documented)."""
+    legend = payload.get("legend")
+    if isinstance(
+        legend, dict
+    ):  # Nimble sends {"0": "low", "1": "medium", ...} for score questions
+        legend = [str(v) for _, v in sorted(legend.items(), key=lambda kv: int(kv[0]))]
     return Answer(
         type=qtype,
         choice=payload.get("choice"),
@@ -58,7 +63,7 @@ def parse_answer(qtype: Literal["choice", "noul", "score"], payload: dict[str, A
         score=payload.get("score"),
         confidence=payload.get("confidence"),
         probabilities=payload.get("probabilities"),
-        legend=payload.get("legend"),
+        legend=legend,
         raw=payload,
     )
 
@@ -122,8 +127,10 @@ class _Base:
     ) -> tuple[float, list[float]]:
         q = Question(type="score", instructions=instructions, criteria=levels)
         a = (await self.decide(state, {"q": q})).answers["q"]
-        probs = a.probabilities if isinstance(a.probabilities, list) else []
-        return a.score if a.score is not None else 0.0, probs
+        probs = a.probabilities
+        if isinstance(probs, dict):  # live Nimble: {"0": p_low, "1": p_medium, ...}
+            probs = [p for _, p in sorted(probs.items(), key=lambda kv: int(kv[0]))]
+        return a.score if a.score is not None else 0.0, list(probs or [])
 
 
 def _annotate(span: trace.Span, name: str, a: Answer) -> None:

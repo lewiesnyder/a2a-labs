@@ -151,3 +151,38 @@ def test_host_runtime_rewrites_docker_ollama_url(monkeypatch: pytest.MonkeyPatch
     config.settings.cache_clear()
     ms.reset_cache()
     assert ms.role_config("quick").base_url == "http://host.docker.internal:11434"
+
+
+def test_parse_answer_accepts_a_dict_legend_from_a_real_score_response() -> None:
+    """Regression: live /v1/systemone sends `legend` as {"0": "low", ...} for score questions."""
+    a = parse_answer(
+        "score",
+        {
+            "score": 1.4,
+            "probabilities": [0.1, 0.5, 0.4],
+            "legend": {"1": "medium", "0": "low", "2": "high"},
+        },
+    )
+    assert a.legend == ["low", "medium", "high"] and a.score == 1.4
+
+
+@respx.mock
+async def test_score_wrapper_orders_dict_probabilities_from_the_live_shape() -> None:
+    respx.post("http://o:11434/v1/systemone").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "answers": {
+                    "q": {
+                        "type": "score",
+                        "score": 1.9,
+                        "legend": {"0": "low", "1": "medium", "2": "high"},
+                        "probabilities": {"2": 0.9, "0": 0.01, "1": 0.09},
+                    }
+                }
+            },
+        )
+    )
+    m = OllamaSystemOneDecisionModel("http://o:11434", "nimble-v3:latest")
+    score, probs = await m.score("state", "risk?", ["low", "medium", "high"])
+    assert score == 1.9 and probs == [0.01, 0.09, 0.9]

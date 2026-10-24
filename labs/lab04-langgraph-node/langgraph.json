@@ -1,0 +1,6 @@
+{
+  "graphs": {
+    "trip_planner": "lab04_langgraph.agents.trip_planner:graph"
+  },
+  "dependencies": ["."]
+}
