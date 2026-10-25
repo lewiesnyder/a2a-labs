@@ -115,11 +115,14 @@ async def connect(
     transport: Binding | None = None,
     a2a_version: str | None = None,
     httpx_client: httpx.AsyncClient | None = None,
+    timeout: float = 60,  # noqa: ASYNC109 - the httpx read timeout, not an asyncio deadline
 ) -> Connected:
+    """``timeout`` is the HTTP read timeout: raise it for a non-streaming call that waits for a
+    whole multi-agent chain (a streaming call keeps the connection alive with events)."""
     hdrs = {"A2A-Version": a2a_version or config.settings().a2a_version, **(headers or {})}
     if extensions:
         hdrs["A2A-Extensions"] = ",".join(extensions)
-    http = httpx_client or httpx.AsyncClient(timeout=60)
+    http = httpx_client or httpx.AsyncClient(timeout=timeout)
     http.headers.update(hdrs)
     card = await A2ACardResolver(http, _base_url(name_or_url)).get_agent_card()
     bridge_card_urls(card)

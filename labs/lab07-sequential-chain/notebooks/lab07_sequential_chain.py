@@ -185,7 +185,7 @@ for h in prov["hops"][1:]:
 
 # %% a2a_coverage=["pattern:6", "decision", "op:ListTasks"]
 # A request that is hard to satisfy; watch the scores and the revision loops
-async with await connect(ORCH, streaming=False) as oc:
+async with await connect(ORCH, streaming=False, timeout=900) as oc:  # the whole loop, minutes on real models
     hard = await send_text(oc, HARD, context_id=str(uuid.uuid4()))
 hp = artifact_data(hard, "provenance")
 print(state_name(hard.state), "| loops:", int(hp["loops"]), "| scores per review (0-3):", [round(s, 2) for s in hp["scores"]])
@@ -206,7 +206,7 @@ print(f"the writer's own view of its context: {len(wtasks)} task(s)", [t.id[:8] 
 
 # %% a2a_coverage=["pattern:6", "state:INPUT_REQUIRED"]
 # Ask something vague, then answer on the same orchestrator task
-async with await connect(ORCH, streaming=False) as oc:
+async with await connect(ORCH, streaming=False, timeout=900) as oc:  # answering runs the whole chain
     ask = await send_text(oc, "Write about it")
     print("orchestrator:", state_name(ask.state), "|", ask.task.status.message.parts[0].text)
     done = await send_text(oc, "ten-year-olds learning about volcanoes", task_id=ask.task_id, context_id=ask.context_id)
@@ -306,7 +306,7 @@ display.table(rows)
 # %%
 # One trace per topology, side by side
 with display.cell_span("orchestrated chain") as s1:
-    async with await connect(ORCH, streaming=False) as oc:
+    async with await connect(ORCH, streaming=False, timeout=900) as oc:
         await send_text(oc, TOPIC, context_id=str(uuid.uuid4()))
 with display.cell_span("relay chain") as s2:
     async with await connect(PLANNER, streaming=True) as pc:
