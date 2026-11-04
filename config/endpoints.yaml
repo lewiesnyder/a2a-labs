@@ -232,6 +232,30 @@ services:
     port: 11005
     docker_url: http://lab10-strands-secure:11005
     host_url: http://localhost:11005
+  lab11-orchestrator:
+    port: 11101
+    docker_url: http://lab11-orchestrator:11101
+    host_url: http://localhost:11101
+  lab11-flights:
+    port: 11102
+    docker_url: http://lab11-flights:11102
+    host_url: http://localhost:11102
+  lab11-hotels:
+    port: 11103
+    docker_url: http://lab11-hotels:11103
+    host_url: http://localhost:11103
+  lab11-docs:
+    port: 11104
+    docker_url: http://lab11-docs:11104
+    host_url: http://localhost:11104
+  lab11-payments:
+    port: 11105
+    docker_url: http://lab11-payments:11105
+    host_url: http://localhost:11105
+  lab11-inbox:
+    port: 11106
+    docker_url: http://lab11-inbox:11106
+    host_url: http://localhost:11106
 infra:
   ollama:
     docker_url: http://host.docker.internal:11434

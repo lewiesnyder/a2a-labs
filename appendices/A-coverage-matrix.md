@@ -29,12 +29,12 @@ Notebook cells that demonstrate a cell of this matrix carry `metadata.a2a_covera
 |---|---|---|
 | SUBMITTED | `state:SUBMITTED` | L00, L08 |
 | WORKING | `state:WORKING` | L00, L01, L04, L07, L08 |
-| INPUT_REQUIRED | `state:INPUT_REQUIRED` | L00, L02, L04, L05, L07 |
-| AUTH_REQUIRED | `state:AUTH_REQUIRED` | L00, L10 |
+| INPUT_REQUIRED | `state:INPUT_REQUIRED` | L00, L02, L04, L05, L07, L11 |
+| AUTH_REQUIRED | `state:AUTH_REQUIRED` | L00, L10, L11 |
 | COMPLETED | `state:COMPLETED` | all |
 | FAILED | `state:FAILED` | L00, L05 (degraded), L06 (rogue card) |
-| CANCELED | `state:CANCELED` | L00, L04, L07, L08 |
-| REJECTED | `state:REJECTED` | L00, L08 (push URL refused), L10 (Lab 09 returns AGP errors as JSON-RPC errors instead, DEV-63) |
+| CANCELED | `state:CANCELED` | L00, L04, L07, L08, L11 |
+| REJECTED | `state:REJECTED` | L00, L08 (push URL refused), L10, L11; Lab 09 returns AGP errors as JSON-RPC errors instead, DEV-63 |
 
 ## A.3 Patterns × frameworks
 
@@ -68,5 +68,6 @@ Notebook cells that demonstrate a cell of this matrix carry `metadata.a2a_covera
 | Extensions (optional/required/ADK/AGP) | `extensions` | L10, L09, L01 |
 | Push security (JWT/JWKS, SSRF) | `push:security` | L08 |
 | Durable task store | `taskstore:db` | L08 (L00 exercise) |
-| Decision model (Nimble) | `decision` | L04, L05, L06, L07, L09, L10 |
+| Decision model (Nimble) | `decision` | L04, L05, L06, L07, L09, L10, L11 |
+| Human-in-the-loop (interrupts relayed through an orchestrator, async inbox, deadline) | `hitl` | L11 |
 | OTel traces / logs / metrics | `otel:traces`, `otel:logs`, `otel:metrics` | all (tour in the root notebook) |

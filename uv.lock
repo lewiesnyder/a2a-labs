@@ -18,6 +18,7 @@ members = [
     "lab08-async-push",
     "lab09-agp-squads",
     "lab10-security-extensions",
+    "lab11-hitl",
 ]
 
 [[package]]
@@ -2031,6 +2032,17 @@ requires-dist = [
     { name = "a2a-labs-common", extras = ["langchain", "adk", "strands"], editable = "libs/a2a-labs-common" },
     { name = "a2a-labs-webhook-receiver", editable = "services/webhook-receiver" },
 ]
+
+[[package]]
+name = "lab11-hitl"
+version = "0.1.0"
+source = { editable = "labs/lab11-hitl" }
+dependencies = [
+    { name = "a2a-labs-common", extra = ["adk", "langchain", "strands"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "a2a-labs-common", extras = ["langchain", "adk", "strands"], editable = "libs/a2a-labs-common" }]
 
 [[package]]
 name = "langchain"
