@@ -1,0 +1,21 @@
+[project]
+name = "lab11-hitl"
+version = "0.1.0"
+description = "Lab 11 — Human-in-the-loop across agents: interrupts relayed through an orchestrator, an inbox for asynchronous approvals, deadlines."
+requires-python = ">=3.12,<3.13"
+dependencies = ["a2a-labs-common[langchain,adk,strands]"]
+
+[tool.uv.sources]
+a2a-labs-common = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lab11_hitl"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "--import-mode=importlib"  # several labs share test module names
+markers = ["compose: needs running compose profile", "llm: needs a real model", "slow: long"]

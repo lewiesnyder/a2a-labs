@@ -1,7 +1,6 @@
 name: e2e
+# Nightly schedule disabled; trigger manually from the Actions tab.
 on:
-  schedule:
-    - cron: "17 3 * * *"
   workflow_dispatch:
 
 jobs:
@@ -11,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        lab: [lab00, lab01, lab02, lab03, lab04, lab05, lab06, lab07, lab08, lab09, lab10]
+        lab: [lab00, lab01, lab02, lab03, lab04, lab05, lab06, lab07, lab08, lab09, lab10, lab11]
     env:
       LLM_PROVIDER: fake
       DECISION_PROVIDER: fake
@@ -76,7 +75,7 @@ jobs:
       - run: uv sync --frozen --all-packages --all-extras
       - run: make models
       - run: |
-          for lab in lab01 lab02 lab04 lab05 lab06 lab07 lab09 lab10; do
+          for lab in lab01 lab02 lab04 lab05 lab06 lab07 lab09 lab10 lab11; do
             make e2e LAB=$lab
             docker compose --profile "*" down -v
           done

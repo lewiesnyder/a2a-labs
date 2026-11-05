@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MATRIX = ROOT / "appendices" / "A-coverage-matrix.md"
-LABS = [f"L{n:02d}" for n in range(11)]
+LABS = [f"L{n:02d}" for n in range(12)]
 # Rows whose "labs" cell is prose the generic parser cannot read: tag -> labs.
 OVERRIDES: dict[str, set[str]] = {
     "transport:jsonrpc": {"L00"},  # the other labs simply use it; Lab 00 compares all three

@@ -875,6 +875,79 @@ services:
       <<: *lab-deps
       lab10-mock-idp: {condition: service_healthy}
 
+  lab11-flights:
+    <<: *lab-service
+    profiles: [lab11, all]
+    command: [python, -m, lab11_hitl.servers.flights]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab11"
+      OTEL_SERVICE_NAME: "lab11-flights"
+      PORT: "11102"
+    ports: ['11102:11102']
+  lab11-hotels:
+    <<: *lab-service
+    profiles: [lab11, all]
+    command: [python, -m, lab11_hitl.servers.hotels]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab11"
+      OTEL_SERVICE_NAME: "lab11-hotels"
+      PORT: "11103"
+    ports: ['11103:11103']
+  lab11-docs:
+    <<: *lab-service
+    profiles: [lab11, all]
+    command: [python, -m, lab11_hitl.servers.docs]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab11"
+      OTEL_SERVICE_NAME: "lab11-docs"
+      PORT: "11104"
+    ports: ['11104:11104']
+  lab11-payments:
+    <<: *lab-service
+    profiles: [lab11, all]
+    command: [python, -m, lab11_hitl.servers.payments]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab11"
+      OTEL_SERVICE_NAME: "lab11-payments"
+      PORT: "11105"
+    ports: ['11105:11105']
+  lab11-inbox:
+    <<: *lab-service
+    profiles: [lab11, all]
+    command: [python, -m, lab11_hitl.servers.inbox]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab11"
+      OTEL_SERVICE_NAME: "lab11-inbox"
+      PORT: "11106"
+      HEALTH_PATH: /healthz
+      LAB11_ORCHESTRATOR: lab11-orchestrator
+      LAB11_INBOX_TOKEN: ${LAB11_INBOX_TOKEN:-lab11-inbox-token}
+    ports: ['11106:11106']
+  lab11-orchestrator:
+    <<: *lab-service
+    profiles: [lab11, all]
+    command: [python, -m, lab11_hitl.servers.orchestrator]
+    environment:
+      <<: *lab-env
+      A2A_LABS_LAB_ID: "lab11"
+      OTEL_SERVICE_NAME: "lab11-orchestrator"
+      PORT: "11101"
+      HITL_DEADLINE_S: "${HITL_DEADLINE_S:-300}"   # how long a question may wait for a person
+      HITL_REAPER_S: "${HITL_REAPER_S:-2}"
+    ports: ['11101:11101']
+    depends_on:
+      <<: *lab-deps
+      lab11-inbox: {condition: service_healthy}
+      lab11-flights: {condition: service_healthy}
+      lab11-hotels: {condition: service_healthy}
+      lab11-docs: {condition: service_healthy}
+      lab11-payments: {condition: service_healthy}
+
 volumes:
   lab08-data: {}
   lgtm-data: {}

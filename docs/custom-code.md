@@ -47,3 +47,7 @@ Every `# CUSTOM:` construct in the repo is listed here: location, reason, offici
 | `a2a_labs_common/agp_gateway.py` | `AgpGatewayExecutor`, `Announcer`, `agp_announce`: routing, failover, fallback, task mirroring | `SequentialAgent`/supervisors (Labs 05/07) route by LLM, not by capability and policy |
 | `lab09_agp/servers/common.py` (`/agp/*`) | Lab-only table dump and pause/resume endpoints | none |
 | `lab09_agp/agents/squad_agents.py` | Squad agents wrapping deterministic handlers (DEV-66) | none |
+| `a2a_labs_common/hitl.py` | HITL conventions (prompt/answer/interrupt data parts) and `interpret_reply`; A2A defines the states, not the content (DEV-70) | none |
+| `lab11_hitl/orchestrator.py` | Staged delegation with HITL relay, ledger, compensation and a deadline reaper (DEV-70..72) | `SequentialAgent`/supervisors relay one question at a time, no ledger by id |
+| `lab11_hitl/inbox.py` | Human-task inbox: push webhook, items, respond | none |
+| `lab11_hitl/servers/common.py` (`/hitl/ledger/{task}`) | Lab-only ledger dump | none |

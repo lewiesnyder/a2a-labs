@@ -1,7 +1,7 @@
 name: ci
+# Automatic runs are disabled; trigger manually from the Actions tab.
 on:
-  push:
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   checks:

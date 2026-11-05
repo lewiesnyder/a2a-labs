@@ -206,3 +206,12 @@ decision:
   - {question: squad, match: "payment", answer: payments}
   - {question: squad, match: "compliance", answer: compliance}
   - {question: squad, answer: fx}
+  # Lab 11: payment risk (the evidence says "above"/"below" the limit) and reading a free-text reply
+  - {question: risk, match: "above the usual limit", answer: 2.0}
+  - {question: risk, match: "below the usual limit", answer: 0.0}
+  - {question: reply, match: "go ahead", answer: approve}
+  - {question: reply, match: "Reply: yes", answer: approve}
+  - {question: reply, match: "Reply: approve", answer: approve}
+  - {question: reply, match: "Reply: no", answer: reject}
+  - {question: reply, match: "Reply: reject", answer: reject}
+  - {question: reply, answer: unclear}
