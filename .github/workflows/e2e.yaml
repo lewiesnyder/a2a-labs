@@ -1,7 +1,6 @@
 name: e2e
+# Nightly schedule disabled; trigger manually from the Actions tab.
 on:
-  schedule:
-    - cron: "17 3 * * *"
   workflow_dispatch:
 
 jobs:
