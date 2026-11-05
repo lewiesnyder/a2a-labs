@@ -5,7 +5,7 @@ delegates to several agents in parallel; some of them need a human. The orchestr
 question, routes every answer to the right delegate task, and does the same **asynchronously**
 (the client leaves; an inbox holds the question; a deadline reaper handles silence).
 
-**Notebook:** [`notebooks/lab11_hitl.ipynb`](notebooks/lab11_hitl.ipynb) (authored as the paired
+**Notebook:** [`notebooks/lab11_human_in_the_loop.ipynb`](notebooks/lab11_human_in_the_loop.ipynb) (authored as the paired
 `.py`). **Spec:** [`labs/lab11-hitl.md`](../lab11-hitl.md). Branch: `hitl`.
 
 ## Run it
